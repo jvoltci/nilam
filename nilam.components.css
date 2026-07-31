@@ -551,12 +551,18 @@
 
   .n-accordion { border: var(--line-1) solid var(--neutral-6); border-radius: var(--r-4); overflow: hidden; }
   .n-accordion > details + details { border-block-start: var(--line-1) solid var(--neutral-6); }
+  /* display:block, not flex, and the chevron absolutely positioned.
+   *
+   * Flex with space-between is the obvious way to push a marker to the end, and it is
+   * wrong here: flex turns every text node AND every inline element into a separate flex
+   * item, so a summary reading "Why is <code>info</code> achromatic?" came out as three
+   * items spread across the full width with gaps in the middle of the sentence. Block
+   * layout keeps inline content as prose, which is what it is. */
   .n-summary {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-3);
+    display: block;
+    position: relative;
     padding: var(--space-3) var(--space-4);
+    padding-inline-end: calc(var(--space-4) + 1.25rem);
     font-size: var(--text-1);
     font-weight: var(--weight-medium);
     cursor: pointer;
@@ -566,11 +572,16 @@
   .n-summary:hover { background: var(--neutral-2); }
   .n-summary::after {
     content: '';
-    flex: none;
+    position: absolute;
+    inset-inline-end: var(--space-4);
+    inset-block-start: 50%;
     inline-size: 0.5rem;
     block-size: 0.5rem;
     border-inline-end: var(--line-2) solid var(--neutral-11);
     border-block-end: var(--line-2) solid var(--neutral-11);
+    /* -70% rather than -50%: rotating a square about its centre leaves the visual
+       centre of a chevron below the geometric one. */
+    translate: 0 -70%;
     rotate: 45deg;
     transition: rotate var(--dur-1) var(--ease-out);
   }

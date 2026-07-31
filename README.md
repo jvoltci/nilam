@@ -90,21 +90,21 @@ system and found none. That's the claim, and it's a narrow one.
 
 ## What this is not
 
-It does **not** compete on breadth, and pretending otherwise would waste your time:
+Some of what this table used to say is now closed. What is left is closed honestly:
 
-| | What they have that this doesn't |
+| | Status |
 |---|---|
-| **React Aria** | Years of screen-reader, touch, IME and i18n behaviour. Not reproducible in a stylesheet. |
-| **Radix** | 30 hand-tuned scales, ~30 headless primitives with full keyboard semantics. |
-| **Material 3** | Cross-platform tokens, Figma libraries, governance, published research. |
-| **shadcn/ui** | 50+ React components and the de-facto ecosystem. |
+| Radix's **30 hand-tuned scales** | **Not a gap.** nilam *solves* scales — 30 of them is one loop over 30 hues, and each one is proven. Radix needed years because it was tuning by hand. |
+| M3's **cross-platform tokens / Figma** | **Closed.** DTCG export → Figma Variables, Style Dictionary, Swift, Kotlin. See [docs/tokens.md](docs/tokens.md). |
+| Radix's **keyboard semantics** | **Narrowed.** ARIA APG keyboard contracts for tabs, menu, combobox, slider, roving focus. See [docs/behaviours.md](docs/behaviours.md). |
+| React Aria's **screen-reader / touch / IME behaviour** | **Still open, and not closeable here.** The keyboard layer is spec-correct. It has never been run against NVDA, JAWS, VoiceOver or TalkBack, and real AT diverges from spec constantly. Only testing on the actual technology finds that. |
+| shadcn's **ecosystem** | **Not closeable.** Its value is that 50,000 developers use it. |
+| M3's **published research** | **Not closeable.** Needs participants. |
 
-**Use nilam for colour and the essential CSS layer. Pair it with React Aria for
-stateful widgets** — combobox, date picker, virtualised grid. That pairing is the
-recommendation, not a fallback.
-
-What nilam *does* cover is the layer underneath all of them, which none of them
-verify.
+**Where certified assistive-technology behaviour matters, pair nilam with
+[React Aria](https://react-spectrum.adobe.com/react-aria/).** That is the honest
+recommendation, not a fallback — it is years of work a stylesheet and a keyboard layer
+cannot contain.
 
 ---
 
@@ -170,6 +170,43 @@ the most common contrast bug I found in other systems.
 @import 'nilam/scale.css';       /* type, space, radius, motion, elevation */
 @import 'nilam/base.css';        /* element defaults, hue leaks closed */
 @import 'nilam/components.css';  /* the .n-* layer */
+@import 'nilam/widgets.css';     /* combobox + slider, needed by nilam/behaviours */
+@import 'nilam/tailwind.css';    /* Tailwind v4 / shadcn bridge — see below */
+```
+
+### Tailwind v4 and shadcn/ui
+
+```css
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/preflight.css' layer(base);
+@import 'nilam/tokens.css';
+@import 'nilam/base.css';
+@import 'nilam/tailwind.css';
+@import 'nilam/components.css';
+@import 'tailwindcss/utilities.css' layer(utilities);
+```
+
+Granular Tailwind imports, not the single `@import 'tailwindcss'`, because sub-layers
+cannot interleave with outside layers — nilam has to sit *between* `base` and
+`utilities` or either preflight beats nilam's headings or `nilam.base` beats your
+utilities. Measured both ways round; both are wrong.
+
+The bridge redefines the ~25 variable names shadcn components read, so `bg-primary`
+paints a proven colour with no component source changed. It also sets
+`--color-*: initial`, which **removes Tailwind's default palette** — `bg-blue-500` stops
+existing, so an unproven colour fails the build instead of shipping quietly.
+
+### Design tokens for other platforms
+
+```js
+import { toDtcg, toFigmaVariables, toSwift, toKotlin } from 'nilam';
+```
+
+### Keyboard behaviours
+
+```js
+import { enhance } from 'nilam/behaviours';
+enhance(document);
 ```
 
 ### Your own hue
@@ -247,7 +284,7 @@ silently un-hides a hidden element.
 npm test
 ```
 
-857 assertions. They cover three separate things:
+7,064 assertions. They cover three separate things:
 
 1. **The solver** — every role contract, gamut, interaction-state perceptibility, and the
    dichromacy separation floor.
@@ -256,9 +293,19 @@ npm test
    object was correct.
 3. **The package** — every `nilam*.css` must appear in both `files` and `exports`, every
    `exports` target must exist, and the bundle must contain its parts.
+4. **The tarball** — what `npm pack` would actually publish, asked of the packer rather
+   than the filesystem.
 
 Job 3 exists because achroma once shipped with its entire component layer missing from
 `files`. Every colour assertion was green. The package was broken.
+
+Job 4 exists because nilam **0.1.0 did it again**, differently: it was published, and
+*then* `nilam.tailwind.css` was added to `files` and `exports`. So the tarball had no
+bridge while `exports["./tailwind.css"]` pointed at it, and every on-disk assertion
+stayed green because the file was there and listed. A consumer got a resolve error.
+
+Both are the same lesson, and so is the step-7 border bug fixed in 0.2.0: **an assertion
+that shares its premise with the thing it audits is not an audit.**
 
 ## Licence
 

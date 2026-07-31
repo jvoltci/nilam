@@ -31,7 +31,18 @@ const CONTRACTS = [
   ['11 on 1', 11, 1, 4.5, 'body text fails AA on the page'],
   ['11 on 3', 11, 3, 4.5, 'body text fails AA on a component surface — the ratio was true in the docs and false on a card'],
   ['9 vs 1', 9, 1, 3.0, 'the filled button does not read as an object against the page (WCAG 1.4.11)'],
-  ['7 vs 1', 7, 1, 3.0, 'control borders are invisible (WCAG 1.4.11)'],
+  ['7 vs 1', 7, 1, 3.0, 'control borders are invisible on the page (WCAG 1.4.11)'],
+  /* The assertion that was missing, and its absence let a real defect ship.
+   *
+   * Every border was solved against step 1 and asserted against step 1, so step 7 measured
+   * exactly 3.05:1 and was declared compliant. On a card — step 3, where controls actually
+   * live — it was 2.70:1 in light and 2.61:1 in dark. A closed loop: the thing that chose
+   * the value and the thing that checked it made the same wrong assumption, so nothing
+   * disagreed. Only migrating a real app surfaced it.
+   *
+   * An assertion that shares its premise with the code it audits is not an audit. */
+  ['7 vs 3', 7, 3, 3.0, 'control borders fail 3:1 on a component surface — compliant on the page and invisible on a card (WCAG 1.4.11)'],
+  ['8 vs 3', 8, 3, 3.0, 'the border hover state is not perceptible on a component surface'],
   ['6 vs 1', 6, 1, 1.4, 'the subtle border cannot be seen at all'],
 ];
 

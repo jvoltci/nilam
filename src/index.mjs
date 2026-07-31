@@ -28,3 +28,5 @@ export {
 } from './colour.mjs';
 
 export { toCss } from './css.mjs';
+export { toDtcg } from './dtcg.mjs';
+export { toStyleDictionary, toFigmaVariables, toSwift, toKotlin } from './export.mjs';

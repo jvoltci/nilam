@@ -13,7 +13,7 @@
  * Every lightness here was found by inverting a contrast requirement, not chosen. The
  * semantic hues were chosen to maximise the smallest pairwise separation across normal
  * vision, protanopia, deuteranopia and tritanopia.
- * 476 assertions hold over these exact
+ * 500 assertions hold over these exact
  * values; edit one by hand and none of them do.
  *
  * Role model (Radix's — it is good design and there was no reason to reinvent it):
@@ -51,8 +51,8 @@
     --neutral-4: light-dark(oklch(0.9190 0.0070 285.0), oklch(0.2730 0.0070 285.0));
     --neutral-5: light-dark(oklch(0.8981 0.0070 285.0), oklch(0.2979 0.0070 285.0));
     --neutral-6: light-dark(oklch(0.8385 0.0070 285.0), oklch(0.3298 0.0070 285.0));
-    --neutral-7: light-dark(oklch(0.6504 0.0070 285.0), oklch(0.4918 0.0070 285.0));
-    --neutral-8: light-dark(oklch(0.5709 0.0070 285.0), oklch(0.5674 0.0070 285.0));
+    --neutral-7: light-dark(oklch(0.6195 0.0070 285.0), oklch(0.5286 0.0070 285.0));
+    --neutral-8: light-dark(oklch(0.5417 0.0070 285.0), oklch(0.6057 0.0070 285.0));
     --neutral-9: light-dark(oklch(0.5650 0.0070 285.0), oklch(0.6600 0.0070 285.0));
     --neutral-10: light-dark(oklch(0.5256 0.0070 285.0), oklch(0.7035 0.0070 285.0));
     --neutral-11: light-dark(oklch(0.5228 0.0070 285.0), oklch(0.6257 0.0070 285.0));
@@ -67,8 +67,8 @@
     --brand-4: light-dark(oklch(0.9195 0.0137 285.0), oklch(0.2764 0.0550 285.0));
     --brand-5: light-dark(oklch(0.8991 0.0214 285.0), oklch(0.3031 0.0745 285.0));
     --brand-6: light-dark(oklch(0.8403 0.0379 285.0), oklch(0.3365 0.0906 285.0));
-    --brand-7: light-dark(oklch(0.6570 0.1050 285.0), oklch(0.5053 0.1606 285.0));
-    --brand-8: light-dark(oklch(0.5832 0.1576 285.0), oklch(0.5797 0.1592 285.0));
+    --brand-7: light-dark(oklch(0.6271 0.1155 285.0), oklch(0.5399 0.1474 285.0));
+    --brand-8: light-dark(oklch(0.5558 0.1698 285.0), oklch(0.6159 0.1434 285.0));
     --brand-9: light-dark(oklch(0.5850 0.2186 285.0), oklch(0.6600 0.1739 285.0));
     --brand-10: light-dark(oklch(0.5502 0.2402 285.0), oklch(0.7002 0.1508 285.0));
     --brand-11: light-dark(oklch(0.5369 0.1675 285.0), oklch(0.6341 0.1274 285.0));
@@ -82,8 +82,8 @@
     --danger-4: light-dark(oklch(0.9204 0.0138 22.0), oklch(0.2768 0.0381 22.0));
     --danger-5: light-dark(oklch(0.9005 0.0217 22.0), oklch(0.3034 0.0515 22.0));
     --danger-6: light-dark(oklch(0.8429 0.0396 22.0), oklch(0.3366 0.0625 22.0));
-    --danger-7: light-dark(oklch(0.6647 0.1224 22.0), oklch(0.5047 0.1119 22.0));
-    --danger-8: light-dark(oklch(0.5897 0.1569 22.0), oklch(0.5857 0.1558 22.0));
+    --danger-7: light-dark(oklch(0.6357 0.1377 22.0), oklch(0.5425 0.1203 22.0));
+    --danger-8: light-dark(oklch(0.5595 0.1488 22.0), oklch(0.6253 0.1663 22.0));
     --danger-9: light-dark(oklch(0.5925 0.2197 22.0), oklch(0.6600 0.2088 22.0));
     --danger-10: light-dark(oklch(0.5512 0.2044 22.0), oklch(0.6984 0.1771 22.0));
     --danger-11: light-dark(oklch(0.5388 0.1346 22.0), oklch(0.6432 0.1506 22.0));
@@ -97,8 +97,8 @@
     --warn-4: light-dark(oklch(0.9196 0.0197 68.0), oklch(0.2736 0.0206 68.0));
     --warn-5: light-dark(oklch(0.8993 0.0309 68.0), oklch(0.2989 0.0277 68.0));
     --warn-6: light-dark(oklch(0.8408 0.0557 68.0), oklch(0.3311 0.0336 68.0));
-    --warn-7: light-dark(oklch(0.6540 0.0790 68.0), oklch(0.4945 0.0598 68.0));
-    --warn-8: light-dark(oklch(0.5750 0.0833 68.0), oklch(0.5713 0.0828 68.0));
+    --warn-7: light-dark(oklch(0.6229 0.0752 68.0), oklch(0.5314 0.0642 68.0));
+    --warn-8: light-dark(oklch(0.5455 0.0791 68.0), oklch(0.6099 0.0884 68.0));
     --warn-9: light-dark(oklch(0.6575 0.1328 68.0), oklch(0.6600 0.1333 68.0));
     --warn-10: light-dark(oklch(0.6153 0.1243 68.0), oklch(0.7038 0.1421 68.0));
     --warn-11: light-dark(oklch(0.5262 0.0717 68.0), oklch(0.6296 0.0857 68.0));
@@ -112,8 +112,8 @@
     --ok-4: light-dark(oklch(0.9131 0.0590 142.0), oklch(0.2700 0.0311 142.0));
     --ok-5: light-dark(oklch(0.8882 0.0992 142.0), oklch(0.2938 0.0417 142.0));
     --ok-6: light-dark(oklch(0.8259 0.1278 142.0), oklch(0.3248 0.0505 142.0));
-    --ok-7: light-dark(oklch(0.6388 0.1183 142.0), oklch(0.4830 0.0895 142.0));
-    --ok-8: light-dark(oklch(0.5589 0.1242 142.0), oklch(0.5554 0.1234 142.0));
+    --ok-7: light-dark(oklch(0.6084 0.1126 142.0), oklch(0.5191 0.0961 142.0));
+    --ok-8: light-dark(oklch(0.5303 0.1178 142.0), oklch(0.5929 0.1317 142.0));
     --ok-9: light-dark(oklch(0.6300 0.1951 142.0), oklch(0.6600 0.2044 142.0));
     --ok-10: light-dark(oklch(0.5895 0.1826 142.0), oklch(0.7030 0.2177 142.0));
     --ok-11: light-dark(oklch(0.5124 0.1070 142.0), oklch(0.6131 0.1280 142.0));
@@ -127,8 +127,8 @@
     --info-4: light-dark(oklch(0.9190 0.0070 285.0), oklch(0.2730 0.0070 285.0));
     --info-5: light-dark(oklch(0.8981 0.0070 285.0), oklch(0.2979 0.0070 285.0));
     --info-6: light-dark(oklch(0.8385 0.0070 285.0), oklch(0.3298 0.0070 285.0));
-    --info-7: light-dark(oklch(0.6504 0.0070 285.0), oklch(0.4918 0.0070 285.0));
-    --info-8: light-dark(oklch(0.5709 0.0070 285.0), oklch(0.5674 0.0070 285.0));
+    --info-7: light-dark(oklch(0.6195 0.0070 285.0), oklch(0.5286 0.0070 285.0));
+    --info-8: light-dark(oklch(0.5417 0.0070 285.0), oklch(0.6057 0.0070 285.0));
     --info-9: light-dark(oklch(0.5650 0.0070 285.0), oklch(0.6600 0.0070 285.0));
     --info-10: light-dark(oklch(0.5256 0.0070 285.0), oklch(0.7035 0.0070 285.0));
     --info-11: light-dark(oklch(0.5228 0.0070 285.0), oklch(0.6257 0.0070 285.0));
@@ -184,6 +184,12 @@
     --font-mono:
       ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
 
+    /* 200 exists because --text-display's own comment says the display size wants weight
+       200, and the first version of this file then shipped nothing below 400 — so the one
+       treatment the scale explicitly recommends was inexpressible with its own tokens.
+       Found by an app that had to define --weight-thin locally to follow the advice. */
+    --weight-thin: 200;
+    --weight-light: 300;
     --weight-normal: 400;
     --weight-medium: 500;
     --weight-semibold: 600;

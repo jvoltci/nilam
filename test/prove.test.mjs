@@ -14,6 +14,7 @@
  */
 
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -179,6 +180,44 @@ for (const name of sheets) {
 }
 for (const [subpath, target] of Object.entries(pkg.exports ?? {})) {
   check(existsSync(join(root, target)), `exports["${subpath}"] points at ${target}, which does not exist`);
+}
+
+/* ── the tarball, not the working tree ────────────────────────────────────
+ *
+ * Everything above this point inspects the working directory, and 0.1.0 proved that is
+ * not the same question. The publish happened, and only THEN were nilam.tailwind.css and
+ * assets/ added to "files" and "exports". So the shipped tarball had no tailwind bridge
+ * while exports["./tailwind.css"] pointed straight at it, and every assertion here stayed
+ * green because on disk the file was present and listed.
+ *
+ * A consumer running `@import 'nilam/tailwind.css'` got a resolve failure. Discovered by
+ * migrating a real app, which is one migration too late.
+ *
+ * `npm pack --dry-run --json` reports exactly what WOULD be published, so this asks the
+ * packer rather than the filesystem. It is the same lesson as the border bug forty lines
+ * up: an assertion that shares its premise with the thing it audits is not an audit. */
+try {
+  const packed = JSON.parse(execFileSync('npm', ['pack', '--dry-run', '--json'], {
+    cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'],
+  }));
+  const shipped = new Set((packed[0]?.files ?? []).map((f) => f.path));
+  check(shipped.size > 0, 'npm pack reported no files at all');
+
+  for (const [subpath, target] of Object.entries(pkg.exports ?? {})) {
+    const rel = target.replace(/^\.\//, '');
+    check(
+      shipped.has(rel),
+      `exports["${subpath}"] -> ${rel} is NOT in the tarball npm would publish. ` +
+        `A consumer importing it gets a resolve error, and every on-disk check passes anyway.`,
+    );
+  }
+  check(shipped.has(pkg.bin.nilam.replace(/^\.\//, '')), `bin.nilam is not in the tarball — npx nilam would fail`);
+  for (const name of sheets) {
+    check(shipped.has(name), `${name} is not in the tarball npm would publish`);
+  }
+} catch (err) {
+  // Never let a missing npm binary silently turn this into a passing suite.
+  fails.push(`could not verify the tarball with \`npm pack --dry-run\`: ${err.message}`);
 }
 check(existsSync(join(root, pkg.bin.nilam)), `bin.nilam points at ${pkg.bin.nilam}, which does not exist`);
 

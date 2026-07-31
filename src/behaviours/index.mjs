@@ -1,0 +1,98 @@
+/* nilam — behaviours: the barrel, and one call that wires a plain HTML page.
+ *
+ *   <script type="module">
+ *     import { enhance } from 'nilam/behaviours';
+ *     enhance();
+ *   </script>
+ *
+ * That is the whole integration story for a page with no build step, which is the kind of
+ * page this system is for. Every widget below still works if you wire it by hand; enhance
+ * only finds the markup and calls the same functions.
+ *
+ * ── what is NOT here, and why ─────────────────────────────────────────────────
+ *
+ * DISCLOSURE. The APG pattern is: a button with aria-expanded that shows and hides a
+ * region, Enter and Space toggle it. <details>/<summary> already is that element — it
+ * carries the expanded state, both keys work, and the component layer's .n-accordion gets
+ * exclusivity from <details name> with no script at all. A JS disclosure here would be a
+ * worse copy of something already in the page.
+ *
+ * MENUBAR, SUBMENUS, MULTI-SELECT LISTBOX, TREE, GRID, DATE PICKER. Real patterns with
+ * real keyboard contracts that are not written yet. The README's claim is narrowed by
+ * this directory, not withdrawn: React Aria still covers far more, and every word of it
+ * has been tested against assistive technology in a way that none of this has.
+ */
+
+export {
+  roving, findByTypeahead, labelOf, ensureId, TYPEAHEAD_MS, PAGE_SIZE,
+} from './roving.mjs';
+
+export { tabs } from './tabs.mjs';
+export { menu } from './menu.mjs';
+export { combobox } from './combobox.mjs';
+export { slider } from './slider.mjs';
+
+import { tabs } from './tabs.mjs';
+import { menu } from './menu.mjs';
+import { combobox } from './combobox.mjs';
+import { slider } from './slider.mjs';
+
+/* One attribute, so enhance() is idempotent. Calling it again after inserting markup — or
+ * twice because two scripts on the page both wanted it — must not attach a second
+ * keydown listener to the same element. Two listeners on a tablist means every arrow
+ * press moves two tabs. */
+const MARK = 'data-n-wired';
+
+const find = (root, selector) =>
+  [...root.querySelectorAll(selector)].filter((el) => !el.hasAttribute(MARK));
+
+/**
+ * Wire every widget under `root` that has the right classes or roles.
+ *
+ * @param root  a DocumentFragment, Element or Document (default: document)
+ * @param opts  per-widget option objects: { tabs, menu, combobox, slider }
+ * @returns the controllers, plus a destroy() that unwires all of them
+ */
+export function enhance(root = typeof document !== 'undefined' ? document : null, opts = {}) {
+  if (!root) throw new Error('enhance(): no document — pass a root element');
+
+  const out = { tabs: [], menus: [], comboboxes: [], sliders: [] };
+
+  for (const el of find(root, '[role="tablist"], .n-tabs')) {
+    el.setAttribute(MARK, 'tabs');
+    /* data-activation on the markup, not just an option, so a page with no build step can
+     * still choose manual activation for the one tablist whose panel fetches something. */
+    const activation = el.getAttribute('data-activation') === 'manual' ? 'manual' : 'automatic';
+    out.tabs.push(tabs(el, { activation, ...opts.tabs }));
+  }
+
+  for (const el of find(root, '.n-menu[popover], [role="menu"][popover]')) {
+    el.setAttribute(MARK, 'menu');
+    out.menus.push(menu(el, { ...opts.menu }));
+  }
+
+  for (const el of find(root, '.n-combobox')) {
+    el.setAttribute(MARK, 'combobox');
+    out.comboboxes.push(combobox(el, { ...opts.combobox }));
+  }
+
+  /* .n-slider first, then any orphan [role="slider"], so a thumb inside a wrapper is not
+   * wired twice — the wrapper pass marks the wrapper, and this pass skips a thumb whose
+   * wrapper is already marked. */
+  for (const el of find(root, '.n-slider')) {
+    el.setAttribute(MARK, 'slider');
+    out.sliders.push(slider(el, { ...opts.slider }));
+  }
+  for (const el of find(root, '[role="slider"]')) {
+    if (el.closest?.(`[${MARK}="slider"]`)) continue;
+    el.setAttribute(MARK, 'slider');
+    out.sliders.push(slider(el, { ...opts.slider }));
+  }
+
+  out.all = [...out.tabs, ...out.menus, ...out.comboboxes, ...out.sliders];
+  out.destroy = () => {
+    for (const c of out.all) c.destroy();
+    for (const el of root.querySelectorAll(`[${MARK}]`)) el.removeAttribute(MARK);
+  };
+  return out;
+}

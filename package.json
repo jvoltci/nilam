@@ -1,6 +1,6 @@
 {
   "name": "nilam",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Proven colour. A design system whose palette is solved from contrast requirements and verified under three kinds of colour blindness.",
   "keywords": [
     "design-system",
@@ -46,7 +46,11 @@
     "./base.css": "./nilam.base.css",
     "./components.css": "./nilam.components.css",
     "./package.json": "./package.json",
-    "./tailwind.css": "./nilam.tailwind.css"
+    "./tailwind.css": "./nilam.tailwind.css",
+    "./dtcg": "./src/dtcg.mjs",
+    "./export": "./src/export.mjs",
+    "./behaviours": "./src/behaviours/index.mjs",
+    "./widgets.css": "./nilam.widgets.css"
   },
   "bin": {
     "nilam": "./src/cli.mjs"
@@ -59,6 +63,7 @@
     "nilam.base.css",
     "nilam.components.css",
     "nilam.tailwind.css",
+    "nilam.widgets.css",
     "build.mjs",
     "README.md",
     "LICENSE",
@@ -66,7 +71,7 @@
   ],
   "scripts": {
     "build": "node build.mjs",
-    "test": "node test/prove.test.mjs",
+    "test": "node test/prove.test.mjs && node test/dtcg.test.mjs && node test/behaviours.test.mjs",
     "prepublishOnly": "node build.mjs && node test/prove.test.mjs",
     "hero": "node assets/hero.mjs"
   }

@@ -136,16 +136,36 @@ export function solveScale(hue, mode, opts = {}) {
     });
   }
 
-  // 6-8 are borders. Step 7 is the one WCAG 1.4.11 governs at 3:1 — it is the
-  // border of a control, which is a non-text UI component. 6 is decorative and
-  // 8 is the hover, so they bracket it.
-  const borderTargets = { 6: 1.55, 7: 3.05, 8: 4.2 };
-  for (const step of [6, 7, 8]) {
+  /* 6-8 are borders. Step 7 is the one WCAG 1.4.11 governs at 3:1 — it is the border of a
+   * control, which is a non-text UI component. 6 is decorative, 8 is the hover.
+   *
+   * 7 AND 8 SOLVE AGAINST STEP 3, NOT STEP 1. That is a bug fix, not a preference.
+   *
+   * The first version solved all three against the page, which made step 7 exactly 3.05:1
+   * there and 2.70:1 on a card — because step 3 is the component surface, and a control
+   * sits on a card far more often than directly on the page. The token measured compliant
+   * in the docs and failed in the product. Every family, both modes.
+   *
+   * It is the SAME mistake already fixed for steps 11 and 12 thirty lines below, which
+   * solve against step 3 for exactly this reason. I wrote that comment and then did not
+   * carry the lesson up here. Found by migrating a real app: a dashed 1.37:1 border on its
+   * drop zone — the entire product — and a 3px warning stripe meant to be the non-hue
+   * channel a deuteranope depends on. At 1.37:1 that channel does not exist.
+   *
+   * Step 6 stays against the page. It is the decorative hairline — a card edge, not a
+   * control boundary — and 1.4.11 does not govern it. Making it clear 3:1 as well would
+   * just be step 7 twice. */
+  s[6] = solveLightness({
+    target: 1.55, against: s[1], hue,
+    direction: light ? 'darker' : 'lighter',
+    chromaAt: chroma(6),
+    ...(light ? { hi: L1 } : { lo: L1 }),
+  });
+  for (const [step, target] of [[7, 3.05], [8, 4.2]]) {
     s[step] = solveLightness({
-      target: borderTargets[step], against: s[1], hue,
+      target, against: s[3], hue,
       direction: light ? 'darker' : 'lighter',
       chromaAt: chroma(step),
-      ...(light ? { hi: L1 } : { lo: L1 }),
     });
   }
 

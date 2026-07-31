@@ -38,6 +38,12 @@
     --font-mono:
       ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
 
+    /* 200 exists because --text-display's own comment says the display size wants weight
+       200, and the first version of this file then shipped nothing below 400 — so the one
+       treatment the scale explicitly recommends was inexpressible with its own tokens.
+       Found by an app that had to define --weight-thin locally to follow the advice. */
+    --weight-thin: 200;
+    --weight-light: 300;
     --weight-normal: 400;
     --weight-medium: 500;
     --weight-semibold: 600;

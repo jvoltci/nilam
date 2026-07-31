@@ -81,48 +81,39 @@ system. That is the claim, and it is a narrow one.
 
 ---
 
-## Your brand hue probably cannot be blue
+## Choosing a brand hue
 
-The most useful thing this tool has produced, and it was not anticipated.
+Not every hue can carry a red / amber / green status set. Sweeping all 360 degrees, only
+roughly **285–315** clears the separation floor by default.
 
-Sweeping all 360 degrees, **only hues around 285–315 clear the separation floor.** Every
-blue fails. The reason is not a threshold artefact:
+The constraint is structural, not a threshold artefact. Tritanopia removes blue–yellow
+discrimination: a blue brand at 240–270 loses its blue component and drifts into the
+grey-green that `ok` must occupy, while a violet brand at 285 or above retains a red
+component and stays clear of it. So with those three statuses, a blue brand and a green
+`ok` are the same colour to a tritanope.
 
-> Tritanopia removes blue–yellow discrimination. A blue brand at 240–270 loses its blue
-> component and drifts toward the grey-green that `ok` has to occupy. A violet brand at 285+
-> keeps a red component, so under the same simulation it moves toward pink and stays clear.
-
-So **if your statuses are red / amber / green, your brand hue cannot be blue** — not for a
-tritanope. Blue is the commonest brand colour in software and essentially nobody accounts
-for this. It is only visible because the hues are chosen by search rather than by taste.
-
-Refusing to emit anything for a blue brand would make the package unusable for most real
-projects, and lowering the floor to let it pass would be dishonest. So:
+If the hue is fixed by an existing brand:
 
 ```bash
 npx nilam 262 --brand-locked --css=tokens.css
 ```
 
-`--brand-locked` moves brand-versus-status from **asserted** to **measured** — the same
-treatment red-versus-green already receives, because the collapse is equally unavoidable.
-The collapse is reported, and `proveStatusChannels()` then **fails the build** unless those
-components carry a glyph. Nothing is weakened; the obligation moves from the palette to the
-component, where it can actually be discharged.
+`--brand-locked` reclassifies brand-versus-status from **asserted** to **measured**, which
+is how red-versus-green is already handled — the collapse is equally unavoidable. The
+affected pairs are reported, and `proveStatusChannels()` fails the build unless those
+components carry a non-hue channel. The requirement moves from the palette to the
+component, where it can be satisfied.
 
 ---
 
 ## Display-P3
 
-Two palettes, both proven. The sRGB one is the base; a second is solved against the P3
-boundary, verified against P3 luminance, and emitted behind `@media (color-gamut: p3)`.
+Two palettes. The sRGB palette is the base; a second is solved against the P3 boundary,
+verified against P3 luminance, and emitted behind `@media (color-gamut: p3)` as explicit
+`color(display-p3 …)` values. Both pass the same contracts.
 
-The tempting one-liner is to emit an out-of-range `oklch()` and let the browser gamut-map
-it. That is rejected deliberately: gamut mapping is the browser's algorithm, it may move
-lightness to preserve hue, and it therefore changes contrast by an amount nothing here
-measured. `color(display-p3 …)` pins the value, so the colour that paints is the colour
-that was proven.
-
-Measured gain — modest at the signature hue, largest on the statuses:
+Values are pinned rather than left to browser gamut mapping, so the colour that paints is
+the colour that was verified. Chroma gained:
 
 | | sRGB | P3 | |
 |---|---|---|---|
@@ -153,14 +144,15 @@ been tested against NVDA, JAWS, VoiceOver or TalkBack, and real assistive techno
 diverges from specification. Where certified AT behaviour is a requirement, pair nilam with
 [React Aria](https://react-spectrum.adobe.com/react-aria/).
 
-**Meaning.** A prover measures separation, not appropriateness. An earlier revision
-optimised separation until `danger` resolved to magenta, with every assertion passing. The
-hue windows in `solve.mjs` exist because of it. This class of error is only visible by
-rendering.
+**Meaning.** A prover measures separation, not appropriateness. Optimising separation
+without constraint resolves `danger` to magenta while every assertion passes, which is why
+`solve.mjs` bounds each semantic hue to a window where the word still means itself. This
+class of error is only visible by rendering.
 
-**One value is chosen, not derived.** `GLOW_L = 0.66`, the dark-mode solid's lightness.
-Four derivations were attempted and none produce it; it is measured from two reference
-colours. The source records this.
+**One value is chosen, not derived.** `GLOW_L = 0.66`, the dark-mode solid's lightness. No
+contrast requirement produces it — in light mode the constraints bind and select the value,
+in dark mode they do not. It is measured from two reference colours, and `solve.mjs` records
+which and why.
 
 ---
 
@@ -180,8 +172,8 @@ So step 9 differs by mode:
 The dark value is *the glow* — L 0.66, which is where both
 [Zima Blue](https://en.wikipedia.org/wiki/Zima_Blue) (`#009fe3`, L 0.667) and the accent
 I'd been using for years (`#8b7cf6`, L 0.657) already sat. Those two are 48° apart in hue
-and read as the same *kind* of colour. My first solver put its blues at L 0.500 and they
-all looked like highlighter ink. **Lightness was the variable, not hue.**
+and read as the same *kind* of colour. The same hue at L 0.500 reads as pigment instead.
+**Lightness is the variable, not hue.**
 
 Always pair step 9 with `--<family>-ink`. A hard-coded `color: white` on a filled button is
 the most common contrast defect in comparable systems.

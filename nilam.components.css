@@ -72,8 +72,13 @@
     block-size: max(100%, 2.75rem);
   }
 
-  .n-btn:hover { background: var(--neutral-3); }
-  .n-btn:active { background: var(--neutral-4); }
+  /* The tint is not the state in dark mode: --neutral-3 on --surface is 1.0009:1, because
+     dark --surface is step 3's lightness with the tint taken off, so the two differ by
+     chroma alone. This button already owns a --neutral-7 border, so the cheapest honest
+     second channel is to move that border rather than add a ring — --neutral-8 against
+     --neutral-7 is a full solved step, and it costs no layout. */
+  .n-btn:hover { background: var(--neutral-3); border-color: var(--neutral-8); }
+  .n-btn:active { background: var(--neutral-4); border-color: var(--neutral-8); }
   .n-btn:disabled,
   .n-btn[aria-disabled='true'] {
     /* Not opacity. Fading a button fades its label too and drops it below 4.5:1 — the
@@ -105,7 +110,14 @@
   .n-btn-ink:hover { background: var(--neutral-11); }
 
   .n-btn-ghost { border-color: transparent; }
-  .n-btn-ghost:hover { background: var(--neutral-3); }
+  /* A ghost button has given its border away, so the border trick above is not available
+     and it needs the ring instead. --neutral-6, not --neutral-7: this is pointer
+     affordance, which 1.4.11 does not govern, and a 3:1 ring would make a ghost button
+     look bordered on hover — which is the thing it exists not to be. */
+  .n-btn-ghost:hover {
+    background: var(--neutral-3);
+    box-shadow: inset 0 0 0 var(--line-1) var(--neutral-6);
+  }
 
   .n-btn-danger {
     background: var(--danger-9);
@@ -445,7 +457,19 @@
     margin: 0;
     border-radius: var(--r-full);
     background: var(--neutral-6);
-    border: none;
+    /* THE THIRD TOGGLE THAT DID NOT GET THE BOUNDARY.
+     *
+     * .n-check and .n-radio both carry --neutral-7 and this had `border: none`, so an
+     * unchecked switch was a --neutral-6 pill at 1.5500:1 against the page and 1.3235:1 on
+     * a card in dark. Its STATE was never in doubt — checked is --brand-9 at 4.3107:1, a
+     * different colour entirely — but a control you cannot find is 1.4.11 all the same, and
+     * 3:1 for a control boundary is the reason step 7 exists.
+     *
+     * box-sizing is border-box globally, so the 1px edge takes the padding box from 36x20
+     * to 34x18 and the knob's inset drops from 0.1875rem to 0.125rem to stay centred. The
+     * checked translate is still exactly 1rem: 2 + 14 + 16 = 32, which leaves the same 2px
+     * at the far end. */
+    border: var(--line-1) solid var(--neutral-7);
     cursor: pointer;
     position: relative;
     transition: background var(--dur-1) var(--ease-out);
@@ -453,8 +477,10 @@
   .n-switch::before {
     content: '';
     position: absolute;
-    inset-block-start: 0.1875rem;
-    inset-inline-start: 0.1875rem;
+    /* 0.125rem, not 0.1875rem: the track gained a 1px border above, so these are measured
+       from a padding box 2px smaller in each axis. */
+    inset-block-start: 0.125rem;
+    inset-inline-start: 0.125rem;
     inline-size: 0.875rem;
     block-size: 0.875rem;
     border-radius: var(--r-full);
@@ -599,7 +625,20 @@
     white-space: nowrap;
     color: var(--neutral-12);
   }
-  .n-table tbody tr:hover td { background: var(--neutral-2); }
+  /* Step 3, not step 2, and a top rule as the second channel.
+   *
+   * --neutral-2 is the one hover in this file that failed in LIGHT as well as dark: it
+   * measures 1.0550:1 against the page and 1.1186:1 on a card, so the row a pointer was
+   * over looked exactly like the rows it was not. Step 3 takes the page case to 1.1300:1
+   * light and 1.1700:1 dark. Text is unaffected either way — .n-table td is --neutral-11
+   * and that is 4.55:1 on step 3 by construction, since step 11 is solved against step 3.
+   *
+   * Only a top rule, because td already draws its own --neutral-6 border-block-end; adding
+   * a bottom inset here would paint a second line on top of it. The pair reads as a band. */
+  .n-table tbody tr:hover td {
+    background: var(--neutral-3);
+    box-shadow: inset 0 var(--line-1) 0 var(--neutral-6);
+  }
 
   /* Wrapper that scrolls a wide table without breaking the page. tabindex="0" in markup
      makes it keyboard-scrollable, which is a real 2.1.1 requirement people miss. */
@@ -711,9 +750,28 @@
     cursor: pointer;
     inline-size: 100%;
   }
-  .n-menu-item:hover, .n-menu-item:focus-visible { background: var(--neutral-3); outline: none; }
+  /* HOVER AND FOCUS ARE SPLIT, and they were not.
+   *
+   * One rule used to serve both and it ended with `outline: none`, so a focused menu item
+   * gave up the global --brand-9 ring (4.9408:1 on a card in dark) and got a --neutral-3
+   * tint instead. .n-pop is --surface by definition, so a menu item is ALWAYS on a card,
+   * and in dark that tint measures 1.0009:1 — dark --surface is step 3's lightness with
+   * the tint removed, so the two differ by chroma and nothing else. Keyboard focus in a
+   * menu was therefore invisible in dark mode: WCAG 2.4.7, not a soft preference.
+   *
+   * So focus keeps the ring the rest of the system uses, and only hover is restyled. The
+   * ring is --neutral-6 rather than --neutral-7 because pointer hover is affordance, which
+   * 1.4.11 does not govern; it measures 1.3235:1 on a card in dark, which is above the
+   * 1.1072:1 ceiling that ANY fill can reach there (see .n-slider-track for the sweep). */
+  .n-menu-item:hover {
+    background: var(--neutral-3);
+    box-shadow: inset 0 0 0 var(--line-1) var(--neutral-6);
+  }
   .n-menu-item-danger { color: var(--danger-11); }
-  .n-menu-item-danger:hover { background: var(--danger-3); }
+  .n-menu-item-danger:hover {
+    background: var(--danger-3);
+    box-shadow: inset 0 0 0 var(--line-1) var(--danger-6);
+  }
   .n-menu-sep { block-size: var(--line-1); background: var(--neutral-6); margin-block: var(--space-1); }
 
   /* Tooltip. popover="hint" is the right type — it does not close other popovers and it
@@ -755,7 +813,10 @@
     list-style: none;
   }
   .n-summary::-webkit-details-marker { display: none; }
-  .n-summary:hover { background: var(--neutral-2); }
+  /* Step 3 for the same reason as the table row: --neutral-2 was 1.0550:1 against the page
+     in LIGHT, not only in dark. .n-accordion already draws --neutral-6 rules between its
+     items, so the tint is the whole signal here and it has to carry. */
+  .n-summary:hover { background: var(--neutral-3); }
   .n-summary::after {
     content: '';
     position: absolute;
@@ -840,6 +901,11 @@
     block-size: 2rem;
     flex: none;
     border-radius: var(--r-full);
+    /* The ring is the shape. --brand-3 on a card measures 1.1973:1 in light and 1.0013:1
+       in dark, so without it the disc vanishes on a card in dark mode and the initials are
+       left floating in the layout with nothing round them. --brand-6 is 1.3235:1 there,
+       which is the most a 1px edge can do without reading as a bordered button. */
+    border: var(--line-1) solid var(--brand-6);
     background: var(--brand-3);
     color: var(--brand-11);
     display: grid;
@@ -905,8 +971,12 @@
   .n-prose ul { list-style: disc; }
   .n-prose ol { list-style: decimal; }
   .n-prose li + li { margin-block-start: var(--space-2); }
+  /* The border is here because <pre> below has one and inline code did not. --neutral-3 on
+     a card is 1.0009:1 in dark, so the tint is doing nothing there and the mono face was
+     carrying the whole distinction on its own. */
   .n-prose code {
     background: var(--neutral-3);
+    border: var(--line-1) solid var(--neutral-6);
     border-radius: var(--r-1);
     padding: 0.1em 0.3em;
   }
@@ -922,6 +992,57 @@
     padding-inline-start: var(--space-4);
     color: var(--neutral-11);
   }
+
+  /* ── kbd, num ───────────────────────────────────────────────────────────── */
+
+  /* A keyboard hint that does not look like inline code.
+   *
+   * nilam.base.css already gives `code, kbd, samp, pre` the mono face at 0.9375em, which
+   * is type and nothing else — so <kbd>I</kbd> and <code>I</code> rendered identically.
+   * That is wrong in a way that matters for tool UIs: "press I" and "the value I" are
+   * different claims, and nilam's OWN behaviours page has been writing <kbd>→</kbd> beside
+   * inline code for five releases with no way to tell them apart. Found by someone
+   * building a keyboard-driven editor on it and reaching for a class that was not there.
+   *
+   * The box, not just a tint: --neutral-3 is 1.0009:1 on a card in dark, so a background
+   * alone would have shipped the same non-distinction it was added to fix. --neutral-7 at
+   * 3.0469:1 is what makes it read as a key. */
+  .n-kbd {
+    display: inline-block;
+    font-family: var(--font-mono);
+    /* Not the 0.9375em from base: a key cap sits inside running text and one step down
+       keeps the line from growing round it. */
+    font-size: var(--text-00);
+    line-height: 1;
+    /* min-inline-size so a single character does not produce a key narrower than it is
+       tall — "K" and "Esc" should read as the same kind of object. */
+    min-inline-size: 1.5em;
+    padding: 0.25em 0.4em;
+    border: var(--line-1) solid var(--neutral-7);
+    /* The bottom edge is the key travel. One border-width, not a blurred shadow, so it
+       survives forced-colors and prints. */
+    border-block-end-width: var(--line-2);
+    border-radius: var(--r-1);
+    background: var(--neutral-3);
+    color: var(--neutral-12);
+    text-align: center;
+    /* A shortcut is one token. "Ctrl" breaking after "Ct" is not a key. */
+    white-space: nowrap;
+  }
+  /* A combination is a sequence of keys, so the joiner lives outside them. */
+  .n-kbd + .n-kbd { margin-inline-start: var(--space-1); }
+
+  /* Tabular figures on their own, for numbers outside a table.
+   *
+   * .n-table-num does this and three other things — text-align: end, nowrap, and
+   * --neutral-12 — because inside a table all four are right together. Outside one, the
+   * alignment is wrong and the colour is a decision the caller should make, so reaching
+   * for .n-table-num on a standalone figure imported two properties nobody asked for.
+   *
+   * Deliberately NO alignment and NO colour. The whole reason this exists rather than
+   * `tabular-nums` at each call site is that a house rule — every number that updates gets
+   * tabular figures — is only enforceable if it has a name. */
+  .n-num { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum' 1; }
 
   /* ── utilities that are genuinely load-bearing ──────────────────────────── */
 

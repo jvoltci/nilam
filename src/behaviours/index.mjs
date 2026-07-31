@@ -31,11 +31,13 @@ export { tabs } from './tabs.mjs';
 export { menu } from './menu.mjs';
 export { combobox } from './combobox.mjs';
 export { slider } from './slider.mjs';
+export { range } from './range.mjs';
 
 import { tabs } from './tabs.mjs';
 import { menu } from './menu.mjs';
 import { combobox } from './combobox.mjs';
 import { slider } from './slider.mjs';
+import { range } from './range.mjs';
 
 /* One attribute, so enhance() is idempotent. Calling it again after inserting markup — or
  * twice because two scripts on the page both wanted it — must not attach a second
@@ -50,13 +52,13 @@ const find = (root, selector) =>
  * Wire every widget under `root` that has the right classes or roles.
  *
  * @param root  a DocumentFragment, Element or Document (default: document)
- * @param opts  per-widget option objects: { tabs, menu, combobox, slider }
+ * @param opts  per-widget option objects: { tabs, menu, combobox, slider, range }
  * @returns the controllers, plus a destroy() that unwires all of them
  */
 export function enhance(root = typeof document !== 'undefined' ? document : null, opts = {}) {
   if (!root) throw new Error('enhance(): no document — pass a root element');
 
-  const out = { tabs: [], menus: [], comboboxes: [], sliders: [] };
+  const out = { tabs: [], menus: [], comboboxes: [], sliders: [], ranges: [] };
 
   for (const el of find(root, '[role="tablist"], .n-tabs')) {
     el.setAttribute(MARK, 'tabs');
@@ -76,6 +78,19 @@ export function enhance(root = typeof document !== 'undefined' ? document : null
     out.comboboxes.push(combobox(el, { ...opts.combobox }));
   }
 
+  /* Ranges before sliders, and this pass marks the two THUMBS as well as the wrapper. Both
+   * of a range's thumbs are [role="slider"], so without the marks the orphan slider pass
+   * below would wire each of them a second time as a single-value slider — and then every
+   * arrow press would move the thumb one step and also clamp it against a bound the other
+   * handler does not know about. find() skips anything already marked, so marking the
+   * thumbs is what makes the two passes disjoint. */
+  for (const el of find(root, '.n-range')) {
+    el.setAttribute(MARK, 'range');
+    const controller = range(el, { ...opts.range });
+    for (const thumb of controller.thumbs) thumb.setAttribute(MARK, 'range-thumb');
+    out.ranges.push(controller);
+  }
+
   /* .n-slider first, then any orphan [role="slider"], so a thumb inside a wrapper is not
    * wired twice — the wrapper pass marks the wrapper, and this pass skips a thumb whose
    * wrapper is already marked. */
@@ -89,7 +104,7 @@ export function enhance(root = typeof document !== 'undefined' ? document : null
     out.sliders.push(slider(el, { ...opts.slider }));
   }
 
-  out.all = [...out.tabs, ...out.menus, ...out.comboboxes, ...out.sliders];
+  out.all = [...out.tabs, ...out.menus, ...out.comboboxes, ...out.sliders, ...out.ranges];
   out.destroy = () => {
     for (const c of out.all) c.destroy();
     for (const el of root.querySelectorAll(`[${MARK}]`)) el.removeAttribute(MARK);

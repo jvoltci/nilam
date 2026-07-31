@@ -1,10 +1,12 @@
 /* nilam — widgets.
  *
- * The two components that need src/behaviours to exist at all. Everything in
- * nilam.components.css works with the stylesheet alone; a combobox and a slider do not,
- * because there is no native element to style. That is the whole reason they live in a
- * separate file: importing this one without the module gets you something that looks
- * right and does nothing, and the split makes that obvious rather than surprising.
+ * The three components that need src/behaviours to exist at all. Everything in
+ * nilam.components.css works with the stylesheet alone; a combobox, a slider and a
+ * two-thumb range do not, because there is no native element to style — <input
+ * type="range"> has exactly one thumb, which is why the range is here and not there.
+ * That is the whole reason they live in a separate file: importing this one without the
+ * module gets you something that looks right and does nothing, and the split makes that
+ * obvious rather than surprising.
  *
  * Same layer as the components, so the cascade is unchanged and anything you write
  * unlayered still beats all of it. No new colours: every value below is an existing
@@ -104,7 +106,16 @@
      *
      * They need different weights, because during arrowing both are on screen at once
      * and a user has to be able to tell "I am looking at this" from "I chose this". */
-  .n-option:hover { background: var(--neutral-3); }
+  /* The tint alone is not a state in dark mode. --neutral-3 on --surface is 1.0009:1
+     there, because dark --surface is DEFINED as step 3's lightness with the tint
+     removed — so the fill differs by chroma and by nothing else. The inset ring is the
+     second channel: --neutral-6 measures 1.3235:1 on a card in dark and 1.6435:1 in
+     light, which is above the 1.1072:1 ceiling any fill can reach. See the note on
+     .n-slider-track for the sweep. */
+  .n-option:hover {
+    background: var(--neutral-3);
+    box-shadow: inset 0 0 0 var(--line-1) var(--neutral-6);
+  }
   .n-option[data-current] {
     background: var(--neutral-4);
     /* An inset bar rather than only a background, because the difference between
@@ -152,11 +163,29 @@
     touch-action: none;
   }
 
+  /* THE BORDER IS THE EXTENT, and this component was the one that did not have it.
+   *
+   * .n-progress, .n-bar and .n-meter all carry a --neutral-7 boundary — added when a
+   * real app shipped a meter whose track measured 1.08:1 against its card. The slider
+   * track was missed in that pass, so it kept a bare fill: --neutral-4 on --surface
+   * measures 1.2722:1 in light and 1.0844:1 in DARK. The filled part is --brand-9 and
+   * perfectly visible, so what disappears is the remainder — a user can see how far the
+   * value has come and not how far it can go. The track is the component's boundary, so
+   * that is WCAG 1.4.11 at 3:1: --neutral-7 measures 3.6537:1 on a card in light and
+   * 3.0469:1 in dark.
+   *
+   * A better FILL cannot fix this, which is worth stating because it is the obvious
+   * thing to try. Sweeping all 2001 lightnesses, the best any fill can do against both
+   * the page and a card in dark while keeping body text at 4.5:1 is 1.1072:1 — and the
+   * optimum is pure black. Near the page WCAG's +0.05 flare term swamps the lightness
+   * difference, so the room simply is not there. --void is used here because it is the
+   * one surface defined as below the page, not because it rescues the ratio. */
   .n-slider-track {
     inline-size: 100%;
     block-size: 0.375rem;
+    border: var(--line-1) solid var(--neutral-7);
     border-radius: var(--r-full);
-    background: var(--neutral-4);
+    background: var(--void);
     overflow: hidden;
   }
 
@@ -194,9 +223,23 @@
     block-size: 2.75rem;
   }
 
+  /* --brand-9, not --brand-6, and with a gap.
+   *
+   * This replaced the global ring with a --brand-6 halo, which measures 1.6435:1 against a
+   * card in light and 1.3235:1 in DARK. Nothing else about the thumb changes on focus — the
+   * border is --brand-9 focused and unfocused — so at 1.32:1 a keyboard user in dark mode
+   * had no visible focus state at all. WCAG 2.4.7.
+   *
+   * Drawn as a shadow rather than an outline for the reason .n-input gives (it hugs the
+   * radius and survives a scroll container), but in two rings: a --surface gap first, then
+   * --brand-9 at 4.9408:1. The gap is what stops a --brand-9 ring merging into the thumb's
+   * own --brand-9 border and reading as one slightly fatter thumb. */
   .n-slider-thumb:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 var(--ring-width) var(--brand-6), var(--shadow-1);
+    box-shadow:
+      0 0 0 var(--ring-offset) var(--surface),
+      0 0 0 calc(var(--ring-offset) + var(--ring-width)) var(--brand-9),
+      var(--shadow-1);
   }
 
   .n-slider-thumb[aria-disabled='true'] {
@@ -242,5 +285,132 @@
     color: var(--neutral-12);
     min-inline-size: 3.5ch;
     text-align: end;
+  }
+
+  /* ── range, two thumbs ────────────────────────────────────────────────────
+   *
+   * --n-range-from and --n-range-to are written by range.mjs, both on the wrapper, and read
+   * by the selected span and by both thumbs — same arrangement as --n-slider-pct, and for
+   * the same reason: no `inset-inline-start` and no width is set from JavaScript, so RTL and
+   * the vertical variant stay CSS problems.
+   *
+   * Which property a thumb reads is chosen by [data-n-range], which range.mjs stamps from
+   * DOM order. Same forcing function as aria-orientation below: the stylesheet reads what
+   * the module wrote, so the two cannot end up disagreeing about which thumb is the lower.
+   */
+
+  .n-range {
+    position: relative;
+    display: flex;
+    align-items: center;
+    inline-size: 100%;
+    block-size: 1.25rem;
+    /* Without this a drag on a touch screen scrolls the page instead of moving a thumb, and
+       the control is not operable by finger at all. */
+    touch-action: none;
+  }
+
+  /* The border is the extent, exactly as on .n-slider-track above, and here it is load-
+     bearing twice over: a range's fill is in the MIDDLE of the track, so both remainders
+     disappear without it and a user can see the span they picked but neither end it could
+     reach. Measured on a card: --neutral-4 is 1.0844:1 in dark and --neutral-3 is 1.0009:1,
+     against the 3:1 WCAG 1.4.11 asks of a control's boundary. --neutral-7 is 3.0469:1 in
+     dark and 3.6537:1 in light. --void for the fill, being the one surface defined as below
+     the page — the border is what carries the ratio. */
+  .n-range-track {
+    position: relative;
+    inline-size: 100%;
+    block-size: 0.375rem;
+    border: var(--line-1) solid var(--neutral-7);
+    border-radius: var(--r-full);
+    background: var(--void);
+    overflow: hidden;
+  }
+
+  /* The selected span. Absolutely positioned rather than a flow child with a percentage
+     margin, because percentage margins resolve against the containing block's INLINE size in
+     both axes — which would silently make the vertical variant a few pixels tall. */
+  .n-range-sel {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: var(--n-range-from, 0%);
+    inline-size: calc(var(--n-range-to, 100%) - var(--n-range-from, 0%));
+    background: var(--brand-9);
+  }
+
+  .n-range-thumb {
+    position: absolute;
+    inset-inline-start: var(--n-range-from, 0%);
+    translate: -50% 0;
+    inline-size: 1rem;
+    block-size: 1rem;
+    border: var(--line-2) solid var(--brand-9);
+    border-radius: var(--r-full);
+    /* --surface, not --neutral-1: on a card the thumb has to read as the card's own colour
+       or it looks like a hole. */
+    background: var(--surface);
+    box-shadow: var(--shadow-1);
+    cursor: grab;
+  }
+  .n-range-thumb[data-n-range='to'] { inset-inline-start: var(--n-range-to, 100%); }
+  .n-range-thumb:active { cursor: grabbing; }
+
+  /* 44px pointer target on a 16px thumb — WCAG 2.5.8, same ::after trick as .n-btn and the
+     slider thumb. Two of them overlap when the range closes to nothing; that is fine,
+     because pointerdown picks the nearer thumb by value rather than by hit target. */
+  .n-range-thumb::after {
+    content: '';
+    position: absolute;
+    inset: 50% 50% auto auto;
+    translate: 50% -50%;
+    inline-size: 2.75rem;
+    block-size: 2.75rem;
+  }
+
+  /* The slider thumb's ring, unchanged: --brand-9 at 4.9408:1 with a --surface gap first, so
+     the ring cannot merge into the thumb's own --brand-9 border and read as one fatter
+     thumb. A --brand-6 halo measures 1.3235:1 on a card in dark, which is no focus state at
+     all — WCAG 2.4.7. */
+  .n-range-thumb:focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 var(--ring-offset) var(--surface),
+      0 0 0 calc(var(--ring-offset) + var(--ring-width)) var(--brand-9),
+      var(--shadow-1);
+  }
+
+  .n-range-thumb[aria-disabled='true'] {
+    /* Not opacity — fading a control fades whatever is drawn on it, and the border is what
+       is doing the work here. */
+    border-color: var(--neutral-7);
+    background: var(--neutral-3);
+    cursor: not-allowed;
+  }
+  .n-range:has([aria-disabled='true']) .n-range-sel { background: var(--neutral-7); }
+
+  /* Vertical, via :has() reading a thumb's own aria-orientation — the same attribute
+     range.mjs reads to choose which pointer axis to measure, so the two cannot disagree. */
+  .n-range:has([aria-orientation='vertical']) {
+    inline-size: 1.25rem;
+    block-size: 9rem;
+    flex-direction: column;
+  }
+  .n-range:has([aria-orientation='vertical']) .n-range-track {
+    inline-size: 0.375rem;
+    block-size: 100%;
+  }
+  .n-range:has([aria-orientation='vertical']) .n-range-sel {
+    inset-block: auto var(--n-range-from, 0%);
+    inset-inline: 0;
+    inline-size: auto;
+    block-size: calc(var(--n-range-to, 100%) - var(--n-range-from, 0%));
+  }
+  .n-range:has([aria-orientation='vertical']) .n-range-thumb {
+    inset-inline-start: 50%;
+    inset-block-end: var(--n-range-from, 0%);
+    translate: -50% 50%;
+  }
+  .n-range:has([aria-orientation='vertical']) .n-range-thumb[data-n-range='to'] {
+    inset-block-end: var(--n-range-to, 100%);
   }
 }

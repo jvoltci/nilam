@@ -10,11 +10,11 @@ enhance(document);        // wires everything with the right classes and roles
 Or one at a time:
 
 ```js
-import { tabs, menu, combobox, slider } from 'nilam/behaviours';
+import { tabs, menu, combobox, slider, range } from 'nilam/behaviours';
 tabs(document.querySelector('.n-tabs'));
 ```
 
-Also import the CSS for the two widgets that need it:
+Also import the CSS for the three widgets that need it:
 
 ```css
 @import 'nilam/widgets.css';
@@ -201,6 +201,71 @@ Three things the APG corrected, and the first one would have shipped wrong:
 See [the warning on the component page](components.md#slider) before using this instead of
 `<input type="range">`.
 
+### Range
+
+Two thumbs, a from and a to. A range input has exactly one thumb, so unlike the slider
+there is nothing native to fall back to — this is the second genuinely missing widget after
+the combobox. The APG pattern is
+[Slider (Multi-Thumb)](https://www.w3.org/WAI/ARIA/apg/patterns/slider-multithumb/).
+
+<div class="nd-demo">
+  <p class="nd-label">two Tab stops · arrows step · End on the lower thumb stops at the upper one</p>
+  <div class="nd-row">
+    <div class="n-range" style="max-inline-size:20rem">
+      <div class="n-range-track"><div class="n-range-sel"></div></div>
+      <div class="n-range-thumb" role="slider" tabindex="0" aria-label="Minimum price" aria-valuemin="0" aria-valuemax="100" aria-valuenow="20"></div>
+      <div class="n-range-thumb" role="slider" tabindex="0" aria-label="Maximum price" aria-valuemin="0" aria-valuemax="100" aria-valuenow="60"></div>
+    </div>
+  </div>
+</div>
+
+```html
+<div class="n-range">
+  <div class="n-range-track"><div class="n-range-sel"></div></div>
+  <div class="n-range-thumb" role="slider" tabindex="0" aria-label="Minimum price"
+       aria-valuemin="0" aria-valuemax="100" aria-valuenow="20"></div>
+  <div class="n-range-thumb" role="slider" tabindex="0" aria-label="Maximum price"
+       aria-valuemin="0" aria-valuemax="100" aria-valuenow="60"></div>
+</div>
+```
+
+Same keys as the slider, on each thumb. **Both thumbs are Tab stops.** The APG: "the tab
+order remains constant regardless of thumb value and visual position", so there is no roving
+focus here — the arrow keys are already spoken for by the value.
+
+**The thumbs clamp; they do not swap.** The lower one stops dead at the upper one's value
+and the other way round. The APG allows either, and clamping is what keeps a thumb's name
+true: with swapping, the thumb labelled "Minimum" becomes the maximum halfway through a
+drag, and its name is then wrong.
+
+Because they clamp, each thumb's bounds move when the other thumb moves:
+
+| Thumb | `aria-valuemin` | `aria-valuemax` |
+|---|---|---|
+| lower | the range minimum | **the upper thumb's value** |
+| upper | **the lower thumb's value** | the range maximum |
+
+Those are rewritten on every change, which the APG requires and which matters for a plain
+reason: a screen reader reads them out, so a thumb that announces "max 100" and then refuses
+to move past 60 is lying. `Home` and `End` go to the bound *as it is now* — `End` on the
+lower thumb parks it against the upper one rather than jumping to the maximum.
+
+Name **both** thumbs. Two unnamed sliders are announced as "slider, slider" and a user
+cannot tell which end they are holding. If the markup names neither, the module falls back to
+"Minimum" and "Maximum": a floor, not a good name. "Minimum price" is a good name.
+
+```js
+range(el, {
+  step: 1,
+  format: (v, which) => `£${v}`,          // → aria-valuetext on that thumb
+  onInput: ({ from, to, which }) => {},   // also fires a bubbling `input` event
+});
+```
+
+Limits, stated: a range cannot be inverted by dragging one thumb through the other, that is
+what clamping costs. There is no minimum-gap option — the thumbs can meet and sit on the
+same value. A wrapper with one thumb throws, because that is a `slider()`.
+
 ---
 
 ## Roving focus
@@ -249,5 +314,5 @@ the page.
 
 ## Read next
 
-- [Components](components.md) — the markup and the styling for all four widgets.
+- [Components](components.md) — the markup and the styling for all five widgets.
 - [Limitations](limitations.md) — the screen-reader caveat, in full.

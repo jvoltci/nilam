@@ -2,7 +2,7 @@
 
 ```css
 @import 'nilam/components.css';   /* the .n-* layer */
-@import 'nilam/widgets.css';      /* combobox + slider, needs nilam/behaviours */
+@import 'nilam/widgets.css';      /* combobox + slider + range, needs nilam/behaviours */
 ```
 
 Every example on this page is real markup, rendered by the stylesheet npm publishes. If a
@@ -710,6 +710,73 @@ The thumb gets the same 44px `::after` target trick as the button, and `touch-ac
 on the wrapper — without which a drag on a touch screen scrolls the page instead of moving
 the thumb.
 
+## Range
+
+Also needs `nilam/behaviours` and `nilam/widgets.css`. Two thumbs, so there is no native
+element at all: `<input type="range">` has exactly one.
+
+<div class="nd-demo">
+  <p class="nd-label">horizontal</p>
+  <div class="nd-row">
+    <div class="n-range" style="max-inline-size:20rem">
+      <div class="n-range-track"><div class="n-range-sel"></div></div>
+      <div class="n-range-thumb" role="slider" tabindex="0" aria-label="Minimum price" aria-valuemin="0" aria-valuemax="100" aria-valuenow="20"></div>
+      <div class="n-range-thumb" role="slider" tabindex="0" aria-label="Maximum price" aria-valuemin="0" aria-valuemax="100" aria-valuenow="60"></div>
+    </div>
+    <span class="n-slider-value">20–60</span>
+  </div>
+  <p class="nd-label">disabled, and vertical</p>
+  <div class="nd-row" style="gap:var(--space-6);align-items:flex-end">
+    <div class="n-range" style="max-inline-size:14rem">
+      <div class="n-range-track"><div class="n-range-sel"></div></div>
+      <div class="n-range-thumb" role="slider" tabindex="0" aria-label="From" aria-disabled="true" aria-valuemin="0" aria-valuemax="100" aria-valuenow="30"></div>
+      <div class="n-range-thumb" role="slider" tabindex="0" aria-label="To" aria-disabled="true" aria-valuemin="0" aria-valuemax="100" aria-valuenow="70"></div>
+    </div>
+    <div class="n-range">
+      <div class="n-range-track"><div class="n-range-sel"></div></div>
+      <div class="n-range-thumb" role="slider" tabindex="0" aria-label="Low" aria-orientation="vertical" aria-valuemin="0" aria-valuemax="100" aria-valuenow="25"></div>
+      <div class="n-range-thumb" role="slider" tabindex="0" aria-label="High" aria-orientation="vertical" aria-valuemin="0" aria-valuemax="100" aria-valuenow="75"></div>
+    </div>
+  </div>
+</div>
+
+```html
+<div class="n-range">
+  <div class="n-range-track"><div class="n-range-sel"></div></div>
+  <div class="n-range-thumb" role="slider" tabindex="0" aria-label="Minimum price"
+       aria-valuemin="0" aria-valuemax="100" aria-valuenow="20"></div>
+  <div class="n-range-thumb" role="slider" tabindex="0" aria-label="Maximum price"
+       aria-valuemin="0" aria-valuemax="100" aria-valuenow="60"></div>
+</div>
+```
+
+| Class | What it is |
+|---|---|
+| `.n-range` | the wrapper. Carries `--n-range-from` and `--n-range-to`, and `touch-action: none` |
+| `.n-range-track` | the full extent, `--void` fill inside a `--neutral-7` border |
+| `.n-range-sel` | the selected span between the thumbs, `--brand-9` |
+| `.n-range-thumb` | one per end. `range.mjs` stamps `data-n-range="from"` / `"to"` on them |
+
+DOM order is the contract: the first thumb is the lower one. The module writes
+`data-n-range` from that order, and the CSS positions each thumb off the attribute, so the
+stylesheet cannot end up disagreeing with the module about which thumb is which. Vertical
+is `:has([aria-orientation="vertical"])`, reading the same attribute the module reads.
+
+**The track's border is not decoration.** A range's fill sits in the *middle* of its track,
+so without a boundary both remainders vanish and a user can see the span they picked but
+neither end it could reach. Measured on a card: `--neutral-4` is 1.0844:1 in dark mode and
+`--neutral-3` is 1.0009:1, against the 3:1 WCAG 1.4.11 asks of a control's extent.
+`--neutral-7` is 3.0469:1 in dark and 3.6537:1 in light. The fill is `--void`; the border is
+what carries the ratio. `.n-progress`, `.n-bar` and `.n-meter` all work the same way.
+
+The two 44px `::after` targets overlap when the range closes to nothing. That is fine:
+`pointerdown` picks the nearer thumb by value, not by hit target, and on an exact tie it
+picks the one the clamp still lets move — otherwise a press-and-drag on two piled-up thumbs
+would do nothing at all.
+
+See [Behaviours](behaviours.md#range) for the keys, the clamping rule and why each thumb's
+`aria-valuemin`/`aria-valuemax` move as the other thumb moves.
+
 ## Links
 
 <div class="nd-demo">
@@ -774,6 +841,48 @@ every `--text-*` size. A fixed rem width does not.
 `blockquote` gets a step-8 brand rail: the one flash of hue in a wall of text, at exactly the
 place a reader's eye should be pulled.
 
+## Keyboard hints
+
+<div class="nd-demo">
+  <p style="font-size:var(--text-0)">Press <span class="n-kbd">I</span> to set the in point, <span class="n-kbd">O</span> for out, and <span class="n-kbd">Ctrl</span><span class="n-kbd">S</span> to export.</p>
+</div>
+
+```html
+Press <span class="n-kbd">I</span> to set the in point.
+```
+
+`nilam.base.css` already gives `code, kbd, samp, pre` the mono face, and that is *all* it
+gives them — so `<kbd>I</kbd>` and `<code>I</code>` rendered identically for five releases,
+including on this site's own [Behaviours](behaviours.md) page. "Press I" and "the value I"
+are different claims and they should not look the same.
+
+Use the class, not the bare element. Styling `kbd` directly would be nilam deciding how your
+prose looks; a class is opt-in.
+
+The border is not decoration. `--neutral-3` is **1.0009:1** on a card in dark mode, so a
+background alone would have shipped the very non-distinction this exists to fix. The
+`--neutral-7` edge at 3.0469:1 is what makes it read as a key, and the heavier bottom edge is
+the key travel — one border-width rather than a blurred shadow, so it survives
+`forced-colors` and printing.
+
+Write a combination as separate elements; `.n-kbd + .n-kbd` handles the gap.
+
+## Numbers
+
+```html
+<span class="n-num">1,284</span> requests · <span class="n-num">99.98%</span> uptime
+```
+
+`.n-num` is `font-variant-numeric: tabular-nums` and nothing else. **No alignment and no
+colour** — which is the whole reason it exists separately from [`.n-table-num`](#tables),
+which also sets `text-align: end`, `white-space: nowrap` and `--neutral-12` because inside a
+table all four belong together. Reaching for `.n-table-num` on a standalone figure imported
+two properties you did not ask for.
+
+Why a class rather than Tailwind's `tabular-nums` at each call site: a house rule that every
+number which updates gets tabular figures is only enforceable if it has a name. A counter
+ticking 9 → 10 reflows the line without it.
+
 ## Two utilities that are load-bearing
 
 ```html
@@ -790,7 +899,7 @@ painted in step 9 with its ink. WCAG 2.4.1, and it costs one line.
 
 ## Read next
 
-- [Behaviours](behaviours.md) — the keyboard layer for tabs, menu, combobox and slider.
+- [Behaviours](behaviours.md) — the keyboard layer for tabs, menu, combobox, slider and range.
 - [Tokens](palette.md) — what every step in those class names actually promises.
 - [Limitations](limitations.md) — including the fact that none of this has met a screen
   reader.

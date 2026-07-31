@@ -44,6 +44,26 @@ const CONTRACTS = [
   ['7 vs 3', 7, 3, 3.0, 'control borders fail 3:1 on a component surface — compliant on the page and invisible on a card (WCAG 1.4.11)'],
   ['8 vs 3', 8, 3, 3.0, 'the border hover state is not perceptible on a component surface'],
   ['6 vs 1', 6, 1, 1.4, 'the subtle border cannot be seen at all'],
+  /* And the same omission again, one step down, found the same way.
+   *
+   * Step 6 was asserted against the page and never against a card — which is precisely what
+   * had just been fixed for step 7 directly above. It matters now because step 6 is the ring
+   * that carries hover and the avatar's edge, after a sweep proved no FILL can do it: in dark
+   * the best any fill achieves against both the page and a card, while keeping body text at
+   * 4.5:1, is 1.1072:1, and the optimum is pure black. Near the page WCAG's +0.05 flare term
+   * swamps the lightness difference. So the ring is load-bearing and needs a floor of its own.
+   *
+   * 1.25, not 1.4: on a card in dark this measures 1.3235:1 and cannot be improved without
+   * moving --surface, which sits at step 3's lightness by construction. The floor is set
+   * below the measurement on purpose — it is a regression guard on a value the ramp already
+   * achieves, not a target that was solved for. */
+  ['6 vs surface', 6, 'surface', 1.25, 'the hover and avatar ring is imperceptible on a card, and no fill can replace it (ceiling 1.1072:1 in dark)'],
+  /* --surface itself is not a numbered step, and text has to survive on it. Dark --surface is
+   * step 3's lightness with the tint removed, so this is near-identical to '11 on 3' in dark
+   * and a genuinely different check in light, where the card is L 1.0 and no step is. */
+  ['11 on surface', 11, 'surface', 4.5, 'body text fails AA on a card'],
+  ['12 on surface', 12, 'surface', 7.0, 'high-contrast text fails on a card'],
+  ['7 vs surface', 7, 'surface', 3.0, 'control borders fail 3:1 on a card (WCAG 1.4.11)'],
 ];
 
 /* Every ratio in here is measured in the palette's OWN gamut.

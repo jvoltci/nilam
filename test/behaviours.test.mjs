@@ -280,6 +280,7 @@ const { tabs } = await import('../src/behaviours/tabs.mjs');
 const { menu } = await import('../src/behaviours/menu.mjs');
 const { combobox } = await import('../src/behaviours/combobox.mjs');
 const { slider } = await import('../src/behaviours/slider.mjs');
+const { range } = await import('../src/behaviours/range.mjs');
 const { enhance } = await import('../src/behaviours/index.mjs');
 
 const list = (...names) => {
@@ -907,7 +908,286 @@ const makeSlider = (attrs = {}) => {
   s.destroy();
 }
 
-/* ══ 7. enhance() ══════════════════════════════════════════════════════════════ */
+/* ══ 7. range, two thumbs ══════════════════════════════════════════════════════ */
+
+/* @param lo    attributes for the lower thumb
+ * @param hi    attributes for the upper thumb
+ * @param outer attributes for the wrapper */
+const makeRange = (lo = {}, hi = {}, outer = {}) => {
+  const wrap = h('div', { class: 'n-range', ...outer });
+  body.append(wrap);
+  const track = h('div', { class: 'n-range-track' }, h('div', { class: 'n-range-sel' }));
+  const lower = h('div', { class: 'n-range-thumb', role: 'slider', ...lo });
+  const upper = h('div', { class: 'n-range-thumb', role: 'slider', ...hi });
+  wrap.append(track, lower, upper);
+  return { wrap, lower, upper };
+};
+
+const span = (lo, hi) => [
+  { 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': String(lo) },
+  { 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': String(hi) },
+];
+
+{
+  const { wrap, lower, upper } = makeRange(...span(20, 60));
+  const r = range(wrap);
+
+  check(
+    lower.getAttribute('role') === 'slider' && upper.getAttribute('role') === 'slider',
+    'a thumb is missing role="slider" — the APG multi-thumb pattern is two sliders, not one widget with two handles',
+  );
+  check(
+    lower.getAttribute('tabindex') === '0' && upper.getAttribute('tabindex') === '0',
+    'both thumbs must be in the page tab sequence — "the tab order remains constant regardless of thumb value", so a roving tabindex here hides one end of the range from Tab',
+  );
+  check(
+    lower.getAttribute('aria-label') === 'Minimum' && upper.getAttribute('aria-label') === 'Maximum',
+    `the thumbs are named "${lower.getAttribute('aria-label')}" and "${upper.getAttribute('aria-label')}" — two unnamed sliders are read out as "slider, slider" and the user cannot tell which end they are holding`,
+  );
+  check(r.from === 20 && r.to === 60, `the range initialised at ${r.from}–${r.to} instead of 20–60`);
+  check(
+    wrap.style.getPropertyValue('--n-range-from') === '20%' && wrap.style.getPropertyValue('--n-range-to') === '60%',
+    `the selected span is drawn from "${wrap.style.getPropertyValue('--n-range-from')}" to "${wrap.style.getPropertyValue('--n-range-to')}" — the thumbs and the values disagree`,
+  );
+  check(
+    lower.getAttribute('data-n-range') === 'from' && upper.getAttribute('data-n-range') === 'to',
+    'the thumbs were not stamped with data-n-range, so the CSS cannot tell which one reads --n-range-to and both stack at the same end of the track',
+  );
+  r.destroy();
+}
+
+{
+  // A name in the markup wins; the generic fallback is a floor, not a policy.
+  const [lo, hi] = span(20, 60);
+  const { wrap, lower, upper } = makeRange({ ...lo, 'aria-label': 'Cheapest' }, hi);
+  const r = range(wrap, { labels: ['Low', 'High'] });
+  check(lower.getAttribute('aria-label') === 'Cheapest', `range() overwrote the author's name with "${lower.getAttribute('aria-label')}"`);
+  check(upper.getAttribute('aria-label') === 'High', 'opts.labels did not name the unnamed thumb');
+  r.destroy();
+}
+
+{
+  // Every key, on the LOWER thumb.
+  const { wrap, lower } = makeRange(...span(20, 90));
+  const r = range(wrap);
+
+  const right = press(lower, 'ArrowRight');
+  check(r.from === 21, `ArrowRight moved the lower thumb to ${r.from} instead of one step up`);
+  check(right.defaultPrevented, 'the arrow keys were not preventDefault-ed, so the page scrolls instead of the range moving');
+  press(lower, 'ArrowUp');
+  check(r.from === 22, 'ArrowUp did not increase the lower thumb');
+  press(lower, 'ArrowLeft');
+  press(lower, 'ArrowDown');
+  check(r.from === 20, 'ArrowLeft and ArrowDown did not decrease the lower thumb');
+  press(lower, 'PageUp');
+  check(r.from === 30, `PageUp moved the lower thumb to ${r.from} instead of a tenth of the range`);
+  press(lower, 'PageDown');
+  check(r.from === 20, 'PageDown did not move the lower thumb back a tenth of the range');
+  press(lower, 'Home');
+  check(r.from === 0 && lower.getAttribute('aria-valuenow') === '0', 'Home did not take the lower thumb to the minimum');
+  press(lower, 'ArrowLeft');
+  check(r.from === 0, 'the lower thumb went below aria-valuemin');
+  const ignored = press(lower, 'F2');
+  check(!ignored.defaultPrevented, 'an unhandled key was preventDefault-ed — the range is swallowing keystrokes it does not use');
+  r.destroy();
+}
+
+{
+  // Every key, on the UPPER thumb.
+  const { wrap, upper } = makeRange(...span(10, 60));
+  const r = range(wrap);
+
+  press(upper, 'ArrowRight');
+  check(r.to === 61, `ArrowRight moved the upper thumb to ${r.to} instead of one step up`);
+  press(upper, 'ArrowUp');
+  check(r.to === 62, 'ArrowUp did not increase the upper thumb');
+  press(upper, 'ArrowLeft');
+  press(upper, 'ArrowDown');
+  check(r.to === 60, 'ArrowLeft and ArrowDown did not decrease the upper thumb');
+  press(upper, 'PageUp');
+  check(r.to === 70, `PageUp moved the upper thumb to ${r.to} instead of a tenth of the range`);
+  press(upper, 'PageDown');
+  check(r.to === 60, 'PageDown did not move the upper thumb back a tenth of the range');
+  press(upper, 'End');
+  check(r.to === 100 && upper.getAttribute('aria-valuenow') === '100', 'End did not take the upper thumb to the maximum');
+  press(upper, 'ArrowRight');
+  check(r.to === 100, 'the upper thumb went past aria-valuemax');
+  check(r.from === 10, `moving the upper thumb dragged the lower one to ${r.from} — the thumbs are independent until they meet`);
+  r.destroy();
+}
+
+{
+  /* The crossing rule, at the boundary. nilam clamps: the thumbs meet and stop. */
+  const { wrap, lower, upper } = makeRange(...span(20, 22));
+  const r = range(wrap);
+
+  press(lower, 'ArrowRight');
+  press(lower, 'ArrowRight');
+  check(r.from === 22, `the lower thumb stopped at ${r.from} and cannot reach the upper one at 22 — clamping means they meet, not that they keep a gap`);
+  press(lower, 'ArrowRight');
+  check(
+    r.from === 22 && r.to === 22,
+    `the lower thumb crossed the upper one and the range now reads ${r.from}–${r.to} — this range clamps rather than swapping, so the thumb stops dead at the other thumb's value`,
+  );
+  check(
+    lower.getAttribute('aria-valuemax') === '22',
+    `the lower thumb reports aria-valuemax="${lower.getAttribute('aria-valuemax')}" while refusing to move past 22 — a thumb that announces a bound it will not honour is lying to a screen reader`,
+  );
+
+  // Piled up is not stuck: each thumb can still move away from the other.
+  press(upper, 'ArrowRight');
+  check(r.to === 23, 'with both thumbs on the same value the upper one could not move up — the range is now stuck at a point');
+  press(lower, 'ArrowLeft');
+  check(r.from === 21, 'with both thumbs on the same value the lower one could not move down');
+
+  // And the upper thumb refuses to pass downwards, by the same rule.
+  press(upper, 'ArrowLeft');
+  press(upper, 'ArrowLeft');
+  check(r.to === 21, `the upper thumb stopped at ${r.to} instead of meeting the lower one at 21`);
+  press(upper, 'ArrowLeft');
+  check(r.to === 21 && r.from === 21, `the upper thumb crossed below the lower one and the range now reads ${r.from}–${r.to}`);
+  r.destroy();
+}
+
+{
+  /* The live constraint, which is the half of clamping a screen reader can actually hear. */
+  const { wrap, lower, upper } = makeRange(...span(20, 60));
+  const r = range(wrap);
+
+  check(
+    lower.getAttribute('aria-valuemax') === '60' && upper.getAttribute('aria-valuemin') === '20',
+    `the thumbs report bounds max="${lower.getAttribute('aria-valuemax')}" and min="${upper.getAttribute('aria-valuemin')}" — each one's dependent bound is the other thumb's current value, and the APG requires it be updated as the value changes`,
+  );
+  check(
+    lower.getAttribute('aria-valuemin') === '0' && upper.getAttribute('aria-valuemax') === '100',
+    'the fixed outer bounds were rewritten — only the dependent bound moves',
+  );
+
+  press(upper, 'ArrowLeft');
+  check(
+    lower.getAttribute('aria-valuemax') === '59',
+    `after the upper thumb moved to 59 the lower one still reports aria-valuemax="${lower.getAttribute('aria-valuemax')}" — the constraint and the announcement have come apart`,
+  );
+  press(lower, 'ArrowRight');
+  check(
+    upper.getAttribute('aria-valuemin') === '21',
+    `after the lower thumb moved to 21 the upper one still reports aria-valuemin="${upper.getAttribute('aria-valuemin')}"`,
+  );
+
+  press(lower, 'End');
+  check(
+    r.from === 59 && r.to === 59,
+    `End on the lower thumb went to ${r.from} — Home and End are "the first / last allowed value in its range", and under clamping the lower thumb's last allowed value is wherever the upper thumb is`,
+  );
+  r.destroy();
+
+  const { wrap: w2, upper: u2 } = makeRange(...span(20, 60));
+  const r2 = range(w2);
+  press(u2, 'Home');
+  check(r2.to === 20 && r2.from === 20, `Home on the upper thumb went to ${r2.to} — its first allowed value is the lower thumb, not the range minimum`);
+  r2.destroy();
+}
+
+{
+  // Units and float drift, and the one event a form can listen for.
+  let heard = null;
+  const { wrap, lower, upper } = makeRange(
+    { 'aria-valuemin': '0', 'aria-valuemax': '1', 'aria-valuenow': '0.2' },
+    { 'aria-valuemin': '0', 'aria-valuemax': '1', 'aria-valuenow': '0.6' },
+    { 'data-step': '0.1' },
+  );
+  wrap.addEventListener('input', (e) => { heard = e.detail; });
+  const r = range(wrap, { format: (v) => `${Math.round(v * 100)} per cent` });
+
+  press(lower, 'ArrowRight');
+  check(r.from === 0.3, `a 0.1 step produced ${r.from} — float drift is showing through into aria-valuenow`);
+  check(
+    lower.getAttribute('aria-valuetext') === '30 per cent' && upper.getAttribute('aria-valuetext') === '60 per cent',
+    `aria-valuetext reads "${lower.getAttribute('aria-valuetext')}" and "${upper.getAttribute('aria-valuetext')}" — both thumbs need their own, and the units belong here and never in aria-valuenow`,
+  );
+  check(
+    /^[\d.]+$/.test(lower.getAttribute('aria-valuenow')) && /^[\d.]+$/.test(upper.getAttribute('aria-valuemin')),
+    'a value or a bound is not a bare decimal number',
+  );
+  check(
+    heard && heard.from === 0.3 && heard.to === 0.6 && heard.which === 'from',
+    'the range did not fire a bubbling input event carrying both ends and which thumb moved — a range has no single value, so a form listening once needs all three',
+  );
+  r.destroy();
+}
+
+{
+  // Vertical: Up increases on both thumbs, because that is a property of the key.
+  const [lo, hi] = span(3, 7);
+  const { wrap, lower, upper } = makeRange(
+    { ...lo, 'aria-valuemax': '10', 'aria-orientation': 'vertical' },
+    { ...hi, 'aria-valuemax': '10', 'aria-orientation': 'vertical' },
+  );
+  const r = range(wrap);
+  press(lower, 'ArrowUp');
+  check(r.from === 4, 'ArrowUp decreased the lower thumb of a vertical range — the APG has no orientation clause: Up and Right always increase');
+  press(upper, 'ArrowUp');
+  check(r.to === 8, 'ArrowUp did not increase the upper thumb of a vertical range');
+  press(upper, 'ArrowDown');
+  press(upper, 'ArrowDown');
+  check(r.to === 6, 'ArrowDown did not decrease the upper thumb of a vertical range');
+  r.destroy();
+}
+
+{
+  // Pointer: the press grabs the nearest thumb, and a tie goes to the one with room.
+  const { wrap } = makeRange(...span(20, 60));
+  wrap.getBoundingClientRect = () => ({ width: 100, height: 20, top: 0, left: 0, bottom: 20, right: 100 });
+  const r = range(wrap);
+  const down = (x) => wrap.dispatchEvent(new Ev('pointerdown', { bubbles: true, clientX: x, clientY: 10, pointerId: 1 }));
+
+  down(30);
+  check(r.from === 30 && r.to === 60, `a press at 30 moved the range to ${r.from}–${r.to} — it must grab the nearest thumb, which is the lower one`);
+  down(90);
+  check(r.to === 90 && r.from === 30, `a press at 90 moved the range to ${r.from}–${r.to} — the upper thumb is nearer`);
+
+  r.set('from', 50);
+  r.set('to', 50);
+  down(70);
+  check(
+    r.to === 70 && r.from === 50,
+    `with both thumbs piled on 50, a press above them moved the range to ${r.from}–${r.to} — on an exact tie the pick has to be the thumb the clamp still lets move, or press-and-drag does nothing at all`,
+  );
+  r.set('to', 50);
+  down(30);
+  check(r.from === 30 && r.to === 50, `with both thumbs piled on 50, a press below them moved the range to ${r.from}–${r.to}`);
+  r.destroy();
+}
+
+{
+  const { wrap, lower, upper } = makeRange(...span(20, 60));
+  wrap.getBoundingClientRect = () => ({ width: 100, height: 20, top: 0, left: 0, bottom: 20, right: 100 });
+  const r = range(wrap);
+  r.destroy();
+  press(lower, 'ArrowRight');
+  press(upper, 'ArrowLeft');
+  wrap.dispatchEvent(new Ev('pointerdown', { bubbles: true, clientX: 90, clientY: 10, pointerId: 1 }));
+  check(r.from === 20 && r.to === 60, `destroy() left its listeners attached — the range still moved to ${r.from}–${r.to} after being torn down`);
+}
+
+{
+  // Crossed markup: an author error, and the only lossless repair is to order the numbers.
+  const { wrap } = makeRange(...span(60, 20));
+  const r = range(wrap);
+  check(r.from === 20 && r.to === 60, `crossed markup initialised at ${r.from}–${r.to} — clamping one thumb onto the other would collapse the range to a point`);
+  r.destroy();
+}
+
+{
+  const wrap = h('div', { class: 'n-range' });
+  body.append(wrap);
+  wrap.append(h('div', { class: 'n-range-thumb', role: 'slider' }));
+  let threw = false;
+  try { range(wrap); } catch { threw = true; }
+  check(threw, 'range() accepted a wrapper with one thumb — it does nothing at all with one, and slider() is the function that was wanted');
+}
+
+/* ══ 8. enhance() ══════════════════════════════════════════════════════════════ */
 
 {
   const page = h('div');
@@ -930,6 +1210,12 @@ const makeSlider = (attrs = {}) => {
   const sl = h('div', { class: 'n-slider' });
   page.append(sl);
   sl.append(h('div', { class: 'n-slider-thumb', role: 'slider', 'aria-valuenow': '3' }));
+  const rg = h('div', { class: 'n-range' });
+  page.append(rg);
+  rg.append(h('div', { class: 'n-range-track' }, h('div', { class: 'n-range-sel' })));
+  const rgLower = h('div', { class: 'n-range-thumb', role: 'slider', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': '20' });
+  const rgUpper = h('div', { class: 'n-range-thumb', role: 'slider', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': '60' });
+  rg.append(rgLower, rgUpper);
   const pop = h('div', { class: 'n-pop n-menu', popover: '', id: 'em1' });
   page.append(h('button', { popovertarget: 'em1' }, 'x'), pop);
   pop.append(h('button', { class: 'n-menu-item' }, 'Only'));
@@ -937,7 +1223,8 @@ const makeSlider = (attrs = {}) => {
   const wired = enhance(page);
   check(wired.tabs.length === 1, `enhance() found ${wired.tabs.length} tablists, expected 1`);
   check(wired.comboboxes.length === 1, `enhance() found ${wired.comboboxes.length} comboboxes, expected 1`);
-  check(wired.sliders.length === 1, `enhance() found ${wired.sliders.length} sliders, expected 1 — a thumb inside a wired wrapper must not be wired twice`);
+  check(wired.sliders.length === 1, `enhance() found ${wired.sliders.length} sliders, expected 1 — a thumb inside a wired wrapper must not be wired twice, and a range's two thumbs are not sliders`);
+  check(wired.ranges.length === 1, `enhance() found ${wired.ranges.length} ranges, expected 1`);
   check(wired.menus.length === 1, `enhance() found ${wired.menus.length} menus, expected 1`);
   check(tl.getAttribute('role') === 'tablist', 'enhance() did not give .n-tabs its role');
 
@@ -946,12 +1233,17 @@ const makeSlider = (attrs = {}) => {
     again.all.length === 0,
     `a second enhance() wired ${again.all.length} widgets again — every arrow press would now move two tabs, because both handlers fire`,
   );
+  press(rgLower, 'ArrowRight');
+  check(
+    wired.ranges[0].from === 21,
+    `after two enhance() calls one ArrowRight moved the range thumb to ${wired.ranges[0].from} instead of 21 — a second keydown listener is attached and every press counts twice`,
+  );
 
   wired.destroy();
   check(page.querySelectorAll('[data-n-wired]').length === 0, 'destroy() left its marker attributes behind, so nothing can be re-wired');
 }
 
-/* ══ 8. the stylesheet ═════════════════════════════════════════════════════════ */
+/* ══ 9. the stylesheet ═════════════════════════════════════════════════════════ */
 
 /* Job 2 of prove.test.mjs, applied to the new file: assert things about the SHIPPED
  * artefact rather than about the intent. A var() naming a token that does not exist
@@ -968,8 +1260,8 @@ check(/@layer nilam\.components\s*\{/.test(widgets), 'nilam.widgets.css is not i
 const body_ = strip(widgets);
 for (const m of body_.matchAll(/var\(\s*(--[\w-]+)/g)) {
   const name = m[1];
-  // --n-slider-pct is written by slider.mjs at runtime, so it is declared nowhere.
-  if (name === '--n-slider-pct') continue;
+  // These three are written by the modules at runtime, so they are declared nowhere.
+  if (name === '--n-slider-pct' || name === '--n-range-from' || name === '--n-range-to') continue;
   check(declared.has(name), `nilam.widgets.css uses var(${name}), which no token file declares — it will resolve to nothing and paint nothing`);
 }
 
@@ -988,10 +1280,30 @@ check(
   'the combobox open state is not styled off aria-expanded — reading the attribute is what stops an inaccessible widget from looking correct',
 );
 check(/touch-action:\s*none/.test(body_), 'the slider does not set touch-action, so dragging it scrolls the page instead');
+check(
+  /\.n-range\s*\{[^}]*touch-action:\s*none/.test(body_),
+  'the range does not set touch-action, so dragging a thumb scrolls the page instead',
+);
+
+/* A range's fill sits in the MIDDLE of its track, so without a border both remainders
+ * vanish: --neutral-4 measures 1.0844:1 on a card in dark mode and --neutral-3 1.0009:1,
+ * against the 3:1 WCAG 1.4.11 wants for the boundary of a control. */
+check(
+  /\.n-range-track\s*\{[^}]*border:\s*var\(--line-1\)\s*solid\s*var\(--neutral-7\)/.test(body_),
+  'the range track has no --neutral-7 border, so on a card in dark mode its extent measures 1.0844:1 and disappears — the border is what carries the component under WCAG 1.4.11',
+);
+check(
+  /\.n-range-thumb\[data-n-range='to'\]/.test(body_),
+  'the CSS does not position the upper thumb off [data-n-range], so both thumbs read --n-range-from and stack at the same end of the track',
+);
+check(
+  /\.n-range:has\(\[aria-orientation='vertical'\]\)/.test(body_),
+  'the vertical range is not selected off a thumb\'s own aria-orientation — a .n-range-vert class would let the stylesheet and range.mjs disagree about which axis is which',
+);
 
 /* ══ report ════════════════════════════════════════════════════════════════════ */
 
-console.log('\nnilam — behaviours: APG keyboard contracts for tabs, menu, combobox and slider');
+console.log('\nnilam — behaviours: APG keyboard contracts for tabs, menu, combobox, slider and range');
 console.log('  DOM is the stub in this file. Nothing here has been run against a screen reader.');
 console.log(`\n  ${pass + fails.length} assertions`);
 if (fails.length) {

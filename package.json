@@ -45,7 +45,8 @@
     "./scale.css": "./nilam.scale.css",
     "./base.css": "./nilam.base.css",
     "./components.css": "./nilam.components.css",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./tailwind.css": "./nilam.tailwind.css"
   },
   "bin": {
     "nilam": "./src/cli.mjs"
@@ -57,6 +58,7 @@
     "nilam.scale.css",
     "nilam.base.css",
     "nilam.components.css",
+    "nilam.tailwind.css",
     "build.mjs",
     "README.md",
     "LICENSE",

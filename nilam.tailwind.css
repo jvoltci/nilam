@@ -1,0 +1,186 @@
+/* nilam — the Tailwind v4 / shadcn bridge.
+ *
+ * shadcn/ui is the de-facto React component layer and it hard-codes a fixed set of
+ * variable names: --background, --primary, --border, --ring and about twenty more. Every
+ * shadcn component reads them. So the fastest honest way to get a proven palette into a
+ * real app is not to rewrite shadcn — it is to redefine what those names mean.
+ *
+ * This maps all of them onto solved tokens. `bg-primary` then paints a colour whose
+ * contrast against its own foreground was proven, and no shadcn component source changes.
+ *
+ * ── the mapping decision that matters ─────────────────────────────────────────
+ *
+ * shadcn assumes a foreground token per surface (--primary + --primary-foreground). nilam
+ * already solves exactly that pairing as step 9 + --brand-ink, including the polarity flip
+ * between modes. So --primary-foreground maps to --brand-ink and NOT to a literal white,
+ * which is what shadcn's own default theme uses and what breaks its dark mode.
+ *
+ * ── why @theme and not :root ──────────────────────────────────────────────────
+ *
+ * Tailwind v4 generates utilities from @theme, so `--color-primary` here is what makes
+ * `bg-primary` and `text-primary` exist at all. Declaring these in :root would define the
+ * variables and generate no classes.
+ */
+
+@theme inline {
+  /* ── DISABLE Tailwind's own palette — AND THIS MUST COME FIRST ──────────
+   *
+   * `--color-*: initial` RESETS the colour namespace, so everything declared before it
+   * is wiped. I wrote it at the bottom of the file first time round, which silently
+   * deleted every token above and would have shipped a stylesheet that defines no
+   * colours at all.
+   *
+   * It is here because without it `bg-blue-500` and `text-slate-400` keep working, and a
+   * system whose whole premise is proven colour ships Tailwind's 250 unproven ones
+   * beside it — measured, in a real app: 657 hardcoded colour utilities. Removing the
+   * namespace makes those class names not exist, so the build fails loudly instead of
+   * painting an unproven hue quietly. */
+  --color-*: initial;
+
+  /* ── surfaces ───────────────────────────────────────────────────────── */
+  --color-background: var(--neutral-1);
+  --color-foreground: var(--neutral-12);
+
+  /* Cards get --surface, the one untinted surface. In light mode the page is tinted and
+     this is pure white, which is why the tint reads as light rather than as dirt. */
+  --color-card: var(--surface);
+  --color-card-foreground: var(--neutral-12);
+  --color-popover: var(--surface);
+  --color-popover-foreground: var(--neutral-12);
+
+  /* ── the brand ──────────────────────────────────────────────────────── */
+  /* Step 9 flips polarity by mode; --brand-ink follows it. This pairing is the whole
+     reason a shadcn <Button> works in both modes with no dark: variant. */
+  --color-primary: var(--brand-9);
+  --color-primary-foreground: var(--brand-ink);
+
+  --color-secondary: var(--neutral-3);
+  --color-secondary-foreground: var(--neutral-12);
+  --color-muted: var(--neutral-3);
+  --color-muted-foreground: var(--neutral-11);
+
+  /* shadcn's --accent is a HOVER surface, not a brand colour — the name is misleading
+     and mapping it to the brand makes every hover state violet. It is neutral-4. */
+  --color-accent: var(--neutral-4);
+  --color-accent-foreground: var(--neutral-12);
+
+  --color-destructive: var(--danger-9);
+  --color-destructive-foreground: var(--danger-ink);
+
+  /* ── lines ──────────────────────────────────────────────────────────── */
+  /* Step 6 for decorative borders, step 7 for control borders. Only 7 is governed by
+     WCAG 1.4.11 at 3:1, because a control border is a non-text UI component and a card
+     edge is not. shadcn uses one --border for both; --input is the control one. */
+  --color-border: var(--neutral-6);
+  --color-input: var(--neutral-7);
+  --color-ring: var(--brand-9);
+
+  /* ── status, which shadcn has no names for ──────────────────────────── */
+  --color-brand: var(--brand-11);
+  --color-brand-line: var(--brand-6);
+  --color-brand-bg: var(--brand-3);
+  --color-brand-fill: var(--brand-9);
+  --color-brand-ink: var(--brand-ink);
+
+  --color-ok: var(--ok-11);
+  --color-ok-bg: var(--ok-3);
+  --color-ok-line: var(--ok-6);
+  --color-ok-fill: var(--ok-9);
+  --color-ok-ink: var(--ok-ink);
+
+  --color-warn: var(--warn-11);
+  --color-warn-bg: var(--warn-3);
+  --color-warn-line: var(--warn-6);
+  --color-warn-fill: var(--warn-9);
+  --color-warn-ink: var(--warn-ink);
+
+  --color-danger: var(--danger-11);
+  --color-danger-bg: var(--danger-3);
+  --color-danger-line: var(--danger-6);
+  --color-danger-fill: var(--danger-9);
+  --color-danger-ink: var(--danger-ink);
+
+  --color-info: var(--info-11);
+  --color-info-bg: var(--info-3);
+  --color-info-line: var(--info-6);
+  --color-info-fill: var(--info-9);
+  --color-info-ink: var(--info-ink);
+
+  /* ── the full ramps, so bg-brand-9 and text-neutral-11 work ─────────── */
+  --color-neutral-1: var(--neutral-1);
+  --color-neutral-2: var(--neutral-2);
+  --color-neutral-3: var(--neutral-3);
+  --color-neutral-4: var(--neutral-4);
+  --color-neutral-5: var(--neutral-5);
+  --color-neutral-6: var(--neutral-6);
+  --color-neutral-7: var(--neutral-7);
+  --color-neutral-8: var(--neutral-8);
+  --color-neutral-9: var(--neutral-9);
+  --color-neutral-10: var(--neutral-10);
+  --color-neutral-11: var(--neutral-11);
+  --color-neutral-12: var(--neutral-12);
+
+  --color-brand-1: var(--brand-1);
+  --color-brand-2: var(--brand-2);
+  --color-brand-3: var(--brand-3);
+  --color-brand-4: var(--brand-4);
+  --color-brand-5: var(--brand-5);
+  --color-brand-6: var(--brand-6);
+  --color-brand-7: var(--brand-7);
+  --color-brand-8: var(--brand-8);
+  --color-brand-9: var(--brand-9);
+  --color-brand-10: var(--brand-10);
+  --color-brand-11: var(--brand-11);
+  --color-brand-12: var(--brand-12);
+
+  /* ── sidebar, which shadcn ships as its own namespace ───────────────── */
+  --color-sidebar: var(--neutral-2);
+  --color-sidebar-foreground: var(--neutral-12);
+  --color-sidebar-primary: var(--brand-9);
+  --color-sidebar-primary-foreground: var(--brand-ink);
+  --color-sidebar-accent: var(--neutral-4);
+  --color-sidebar-accent-foreground: var(--neutral-12);
+  --color-sidebar-border: var(--neutral-6);
+  --color-sidebar-ring: var(--brand-9);
+
+  /* ── charts ─────────────────────────────────────────────────────────────
+   *
+   * shadcn expects --chart-1..5. Steps of ONE solved scale rather than five arbitrary
+   * hues: a sequential series wants a lightness ramp, every neighbouring pair is then
+   * guaranteed distinguishable, and every one of them is legible on a card. Five
+   * unrelated hues are the usual choice and they fail both tests. */
+  --color-chart-1: var(--brand-11);
+  --color-chart-2: var(--brand-10);
+  --color-chart-3: var(--brand-9);
+  --color-chart-4: var(--brand-8);
+  --color-chart-5: var(--brand-7);
+
+  /* ── type, space, radius, motion, elevation ─────────────────────────── */
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  --radius-xs: var(--r-1);
+  --radius-sm: var(--r-2);
+  --radius-md: var(--r-3);
+  --radius-lg: var(--r-4);
+  --radius-xl: var(--r-5);
+  --radius-2xl: var(--r-6);
+  --radius-full: var(--r-full);
+
+  /* Tailwind ships seven shadow steps; nilam solves three. Mapping them 7-to-3 rather
+     than inventing four more keeps every shadow one of the measured ones — including the
+     mode-aware alpha, which is ~23x heavier in dark because browsers composite alpha in
+     gamma-encoded sRGB. That gap is why most dark themes look flat. */
+  --shadow-2xs: var(--shadow-1);
+  --shadow-xs: var(--shadow-1);
+  --shadow-sm: var(--shadow-1);
+  --shadow: var(--shadow-1);
+  --shadow-md: var(--shadow-2);
+  --shadow-lg: var(--shadow-2);
+  --shadow-xl: var(--shadow-3);
+  --shadow-2xl: var(--shadow-3);
+
+  --ease-out: var(--ease-out);
+  --ease-in-out: var(--ease-in-out);
+
+}

@@ -192,9 +192,13 @@ export function toHex(colour) {
  * carry at each candidate lightness — passing a function lets the caller ask for
  * "as saturated as sRGB allows" or "a whisper of the hue" without changing this.
  */
-export function solveLightness({ target, against, hue, direction, chromaAt, lo = 0, hi = 1 }) {
+export function solveLightness({ target, against, hue, direction, chromaAt, lo = 0, hi = 1, gamut = 'srgb' }) {
   const at = (L) => ({ L, C: chromaAt(L, hue), h: hue });
-  const ratio = (L) => contrast(at(L), against);
+  /* Measured in the TARGET gamut. Solving against sRGB luminance and then emitting a P3
+   * colour would reproduce, in a new place, exactly the closed loop the step-7 border bug
+   * came from: the code that picks the value and the code that checks it must not disagree
+   * about which display the value is for. */
+  const ratio = (L) => contrastIn(at(L), against, gamut);
 
   // Widen toward the achievable end first, so an impossible target reports the
   // best it could do rather than silently returning a midpoint.
@@ -221,4 +225,152 @@ export function hexToOklch(hex) {
   const n = parseInt(String(hex).replace('#', ''), 16);
   const ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => gammaDecode(v / 255));
   return linearToOklch({ r: ch[0], g: ch[1], b: ch[2] });
+}
+
+/* ── wide gamut: Display-P3 ───────────────────────────────────────────────
+ *
+ * Everything above assumes sRGB, and for a while that was the whole story: the tokens
+ * were sRGB-clamped and the README said so under Limitations. Most screens sold since
+ * about 2016 can do better.
+ *
+ * How much better, MEASURED rather than assumed — the first draft of this comment claimed
+ * "roughly 25% more chroma at the blue end" and that was simply wrong:
+ *
+ *   brand solid  hue 285  L 0.585   0.238 -> 0.256   +8%
+ *   brand glow   hue 285  L 0.660   0.189 -> 0.205   +8%
+ *   danger       hue  22  L 0.620   0.250 -> 0.282  +13%
+ *   warn         hue  68  L 0.750   0.165 -> 0.189  +15%
+ *   ok           hue 142  L 0.620   0.209 -> 0.246  +18%
+ *
+ * The gain is real but modest at the signature hue and largest on the statuses. Below
+ * L 0.5 at hue 285 it is +2%, because that stretch of the blue boundary is nearly identical
+ * in both spaces. Worth shipping; not worth overselling.
+ *
+ * ── why not just emit the unclamped oklch() and let the browser map it ──
+ *
+ * That is the tempting one-line version. CSS Color 4 gamut-maps an out-of-range oklch()
+ * to whatever the display can show, so `oklch(0.585 0.28 285)` would render richer on a
+ * P3 panel for free.
+ *
+ * It is not acceptable here, and the reason is the entire point of the package. Gamut
+ * mapping is the BROWSER's algorithm, it is allowed to move lightness to preserve hue,
+ * and it therefore changes the contrast ratio by an amount nothing in this repo measured.
+ * A palette that is proven in sRGB and gamut-mapped by someone else's code on a P3
+ * display is a palette that is proven on some screens. So instead: solve a second
+ * palette against the P3 boundary, prove it independently, and emit it behind
+ * `@media (color-gamut: p3)`. Two palettes, both proven, no browser guesswork.
+ *
+ * Matrices: OKLab -> LMS -> XYZ(D65) -> linear P3. The first two legs are Ottosson's,
+ * inverted; the third is the standard Display-P3 primaries. P3 shares sRGB's transfer
+ * function, so gammaEncode/gammaDecode above are correct for both and there is no second
+ * curve to get wrong.
+ */
+
+const LMS_TO_XYZ = [
+  [1.2268798758, -0.5578149944, 0.2813910456],
+  [-0.0405757452, 1.1122868032, -0.0717110580],
+  [-0.0763729367, -0.4214933324, 1.5869240198],
+];
+
+const XYZ_TO_LINEAR = {
+  srgb: [
+    [3.2409699419, -1.5373831776, -0.4986107603],
+    [-0.9692436363, 1.8759675015, 0.0415550574],
+    [0.0556300797, -0.2039769589, 1.0569715142],
+  ],
+  'display-p3': [
+    [2.4934969119, -0.9313836179, -0.4027107845],
+    [-0.8294889696, 1.7626640603, 0.0236246858],
+    [0.0358458302, -0.0761723893, 0.9568845240],
+  ],
+};
+
+export const GAMUTS = Object.keys(XYZ_TO_LINEAR);
+
+/** OKLCH -> XYZ (D65). Gamut-independent, which is what makes one solver serve both. */
+export function oklchToXyz({ L, C, h }) {
+  const hr = (h * Math.PI) / 180;
+  const a = C * Math.cos(hr);
+  const b = C * Math.sin(hr);
+
+  // Inverse of Ottosson's M2, then cube to undo the perceptual root.
+  const l_ = L + 0.3963377774 * a + 0.2158037573 * b;
+  const m_ = L - 0.1055613458 * a - 0.0638541728 * b;
+  const s_ = L - 0.0894841775 * a - 1.2914855480 * b;
+  const lms = [l_ ** 3, m_ ** 3, s_ ** 3];
+
+  const [X, Y, Z] = LMS_TO_XYZ.map((row) => row[0] * lms[0] + row[1] * lms[1] + row[2] * lms[2]);
+  return { X, Y, Z };
+}
+
+/** OKLCH -> linear RGB in the named gamut. Unclamped, so the caller can see out-of-range. */
+export function oklchToLinearIn(c, gamut = 'srgb') {
+  /* sRGB routes through the existing direct matrix rather than via XYZ. Not an
+   * optimisation — it guarantees the wide-gamut work cannot perturb a single sRGB value,
+   * and a test asserts the two paths agree to 1e-6 so the guarantee is checked. */
+  if (gamut === 'srgb') return oklchToLinear(c);
+
+  const m = XYZ_TO_LINEAR[gamut];
+  if (!m) throw new Error(`unknown gamut: ${gamut}`);
+  const { X, Y, Z } = oklchToXyz(c);
+  const [r, g, b] = m.map((row) => row[0] * X + row[1] * Y + row[2] * Z);
+  return { r, g, b };
+}
+
+export const inGamutOf = (c, gamut = 'srgb') => {
+  const { r, g, b } = oklchToLinearIn(c, gamut);
+  return Math.min(r, g, b) >= -EPS && Math.max(r, g, b) <= 1 + EPS;
+};
+
+/** The largest chroma that fits the named gamut at this lightness and hue. */
+export function maxChromaIn(L, h, gamut = 'srgb') {
+  if (gamut === 'srgb') return maxChroma(L, h);
+  let lo = 0;
+  let hi = 0.5;
+  for (let i = 0; i < 48; i++) {
+    const mid = (lo + hi) / 2;
+    if (inGamutOf({ L, C: mid, h }, gamut)) lo = mid;
+    else hi = mid;
+  }
+  return lo;
+}
+
+/* Relative luminance in a named gamut.
+ *
+ * The clamp is the whole subtlety and it is deliberate. WCAG's Y is a property of the
+ * light actually leaving the screen, so the value that matters is the one the display
+ * CAN show — an out-of-range channel gets clipped in hardware, and a ratio computed from
+ * the unclipped number is a ratio nothing will ever paint. That was already true for
+ * sRGB; it is true per-gamut here.
+ *
+ * For sRGB, 0.2126R + 0.7152G + 0.0722B on linearised sRGB IS the Y of XYZ D65, so this
+ * generalises the existing formula rather than replacing it. For P3 the coefficients
+ * differ, which is why Y comes from the XYZ transform instead of a hard-coded triple. */
+const LINEAR_TO_Y = {
+  srgb: [0.2126390059, 0.7151686788, 0.0721923154],
+  'display-p3': [0.2289745641, 0.6917385218, 0.0792869141],
+};
+
+export function luminanceIn(c, gamut = 'srgb') {
+  const { r, g, b } = oklchToLinearIn(c, gamut);
+  const k = (v) => Math.min(1, Math.max(0, v));
+  const w = LINEAR_TO_Y[gamut];
+  return w[0] * k(r) + w[1] * k(g) + w[2] * k(b);
+}
+
+export function contrastIn(a, b, gamut = 'srgb') {
+  const ya = luminanceIn(a, gamut);
+  const yb = luminanceIn(b, gamut);
+  const [hi, lo] = ya >= yb ? [ya, yb] : [yb, ya];
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+/** CSS for a colour in a named gamut. oklch() for sRGB (already the emitted form),
+ *  color(display-p3 …) for P3 — explicit, so no browser gamut mapping is involved. */
+export function fmtIn(c, gamut = 'srgb') {
+  if (gamut === 'srgb') return fmt(c);
+  const { r, g, b } = oklchToLinearIn(c, gamut);
+  const k = (v) => Math.min(1, Math.max(0, gammaEncode(v)));
+  const n = (v) => Number(k(v).toFixed(5));
+  return `color(display-p3 ${n(r)} ${n(g)} ${n(b)})`;
 }

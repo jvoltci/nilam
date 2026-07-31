@@ -1,0 +1,415 @@
+/* nilam, documenting itself.
+ *
+ * A design system's docs site painted in someone else's colours is an advertisement
+ * against itself. So every colour on these pages comes from the shipped
+ * nilam.tokens.css, and this file is the join: it repoints mkdocs-material's own
+ * --md-* variables at solved tokens, and hands the live example blocks back to
+ * nilam.components.css.
+ *
+ * Two prefixes, kept apart on purpose:
+ *
+ *   .n-*    SHIPPED. Defined in nilam.components.css / nilam.widgets.css. Nothing in
+ *           this file redefines one, so a demo that renders correctly here renders
+ *           correctly in your app.
+ *   .nd-*   DOCS ONLY. Layout scaffolding for the example blocks. Never published.
+ *
+ * ── why nilam.base.css is NOT imported ────────────────────────────────────────
+ *
+ * mkdocs.yml loads tokens, scale, components and widgets. Not base. That is a measured
+ * decision, not an oversight.
+ *
+ * nilam.base.css contains the package's one !important:
+ *
+ *     [hidden] { display: none !important }
+ *
+ * It is there because without it any author `display` silently un-hides a hidden
+ * element. Important declarations invert layer order, so a layered !important beats
+ * unlayered author CSS — which is the whole point of that rule, and exactly wrong here.
+ * mkdocs-material ships the theme toggle as
+ *
+ *     <label class="md-header__button" … hidden>
+ *     .md-option:checked + label:not([hidden]) { display: block }
+ *
+ * and removes the attribute in JavaScript. Under nilam.base the label stays hidden for
+ * ever: no light/dark toggle in the header, on a site whose subject is light and dark.
+ * The back-to-top button uses `hidden` as a fade state the same way.
+ *
+ * So base's element defaults are the one layer that cannot cohabit with a theme that
+ * treats `hidden` as a style rather than as a fact. Everything else composes cleanly,
+ * because ALL of nilam is inside @layer and material's CSS is unlayered — unlayered
+ * author styles beat every layer, so material wins every collision by default and
+ * nilam paints only where material says nothing. That is why this file works by
+ * redeclaring material's variables rather than by fighting its selectors.
+ *
+ * ── where the specificity goes ────────────────────────────────────────────────
+ *
+ * Custom properties are inherited, and inheritance is not specificity: material
+ * declares its palette on `<body>` via [data-md-color-scheme=…], so a redeclaration on
+ * :root (that is, <html>) loses to it for every element inside body — the closer
+ * ancestor wins regardless of how the selectors compare. Hence [data-md-color-scheme],
+ * which matches the same element, at the same specificity, later in source order.
+ */
+
+/* ── 1. the mode bridge ─────────────────────────────────────────────────────────
+ *
+ * nilam keys off the inherited `color-scheme` property, and material's toggle writes
+ * data-md-color-scheme. One rule joins them.
+ *
+ * Only the light half is needed: material's own palette.css already sets
+ * `color-scheme: dark` on [data-md-color-scheme=slate]. Without the light half, a
+ * visitor whose OS is dark but who has pressed the toggle to light gets material's
+ * light chrome with nilam's dark tokens inside it.
+ *
+ * Also mirrored onto <html>, because the root element is what the browser paints the
+ * canvas and the scrollbars from — body alone leaves a white gutter under a dark page.
+ */
+html:has(body[data-md-color-scheme='default']) { color-scheme: light }
+html:has(body[data-md-color-scheme='slate']) { color-scheme: dark }
+[data-md-color-scheme='default'] { color-scheme: light }
+
+/* ── 2. material's palette, repointed at solved tokens ──────────────────────────
+ *
+ * ONE block, not one per scheme. This is the light-dark() argument made on the page
+ * that makes it: every value below resolves per mode because the token it references
+ * does, so there is no slate copy of this block to keep in sync.
+ */
+[data-md-color-scheme] {
+  /* surfaces and ink */
+  --md-default-bg-color: var(--neutral-1);
+  --md-default-bg-color--light: color-mix(in oklab, var(--neutral-1) 54%, transparent);
+  --md-default-bg-color--lighter: color-mix(in oklab, var(--neutral-1) 26%, transparent);
+  --md-default-bg-color--lightest: color-mix(in oklab, var(--neutral-1) 7%, transparent);
+  --md-default-fg-color: var(--neutral-12);
+  --md-default-fg-color--light: var(--neutral-11);
+  --md-default-fg-color--lighter: var(--neutral-8);
+  --md-default-fg-color--lightest: var(--neutral-6);
+
+  /* The header, and it is the best demonstration on the site. --brand-9 inverts
+     polarity by mode and --brand-ink follows it, so the bar is a dark violet with
+     light text on a light page and the light glow with dark text on a dark one — from
+     two token names, with no slate override anywhere. */
+  --md-primary-fg-color: var(--brand-9);
+  --md-primary-fg-color--light: var(--brand-8);
+  --md-primary-fg-color--dark: var(--brand-10);
+  --md-primary-bg-color: var(--brand-ink);
+  --md-primary-bg-color--light: color-mix(in oklab, var(--brand-ink) 70%, transparent);
+
+  --md-accent-fg-color: var(--brand-10);
+  --md-accent-fg-color--transparent: color-mix(in oklab, var(--brand-9) 10%, transparent);
+  --md-accent-bg-color: var(--brand-ink);
+
+  --md-typeset-color: var(--neutral-12);
+
+  /* STEP 11, NOT STEP 9 — the one substantive correction this file makes to material's
+     own defaults rather than just recolouring them.
+     Material sets --md-typeset-a-color to --md-primary-fg-color, so a link is painted
+     in the primary colour. nilam's step 9 is an OBJECT colour: it is solved to clear
+     3:1 against the page (WCAG 1.4.11) and it measures 4.31:1 in light mode. That is
+     compliant for a button and fails 1.4.3 for text at 4.5:1. Step 11 is the text
+     role, solved to 4.55:1 against step 3, which is the worst surface a link is
+     allowed to sit on. */
+  --md-typeset-a-color: var(--brand-11);
+
+  --md-typeset-mark-color: var(--warn-3);
+  --md-typeset-del-color: color-mix(in oklab, var(--danger-9) 18%, transparent);
+  --md-typeset-ins-color: color-mix(in oklab, var(--ok-9) 18%, transparent);
+  --md-typeset-kbd-color: var(--neutral-3);
+  --md-typeset-kbd-accent-color: var(--surface);
+  --md-typeset-kbd-border-color: var(--neutral-7);
+  --md-typeset-table-color: var(--neutral-6);
+  --md-typeset-table-color--light: var(--neutral-2);
+
+  /* code */
+  --md-code-bg-color: var(--neutral-2);
+  --md-code-bg-color--light: color-mix(in oklab, var(--neutral-2) 90%, transparent);
+  --md-code-bg-color--lighter: color-mix(in oklab, var(--neutral-2) 54%, transparent);
+  --md-code-fg-color: var(--neutral-12);
+  --md-code-hl-color: var(--brand-9);
+  --md-code-hl-color--light: color-mix(in oklab, var(--brand-9) 12%, transparent);
+
+  /* Syntax highlighting is CONTENT, not interface, so the claim here is narrow: each
+     of these is a step-11 token, and step 11 is solved to 4.55:1 against step 3 — the
+     worst background in the system, and darker than the --neutral-2 code block they
+     actually sit on. So every colour in a code block on this site clears 4.5:1 in both
+     modes. What is NOT claimed is the dichromacy separation: that assertion is about
+     the status solids at step 9, and it is not being borrowed here. */
+  --md-code-hl-keyword-color: var(--brand-11);
+  --md-code-hl-function-color: var(--brand-10);
+  --md-code-hl-variable-color: var(--brand-11);
+  --md-code-hl-string-color: var(--ok-11);
+  --md-code-hl-number-color: var(--danger-11);
+  --md-code-hl-special-color: var(--danger-11);
+  --md-code-hl-constant-color: var(--warn-11);
+  --md-code-hl-name-color: var(--neutral-12);
+  --md-code-hl-operator-color: var(--neutral-11);
+  --md-code-hl-punctuation-color: var(--neutral-11);
+  --md-code-hl-comment-color: var(--neutral-11);
+  --md-code-hl-generic-color: var(--neutral-11);
+
+  /* admonitions and the version banner */
+  --md-admonition-fg-color: var(--neutral-12);
+  --md-admonition-bg-color: var(--surface);
+  --md-warning-fg-color: var(--warn-12);
+  --md-warning-bg-color: var(--warn-3);
+
+  /* footer */
+  --md-footer-bg-color: var(--neutral-2);
+  --md-footer-bg-color--dark: var(--neutral-3);
+  --md-footer-fg-color: var(--neutral-12);
+  --md-footer-fg-color--light: var(--neutral-11);
+  --md-footer-fg-color--lighter: var(--neutral-8);
+
+  /* Elevation, straight through. The alphas inside --shadow-* differ by roughly 23x
+     between modes because browsers composite alpha in gamma-encoded sRGB; material's
+     own z1/z2/z3 are one fixed set of blacks, which is why most dark themes look
+     flat. */
+  --md-shadow-z1: var(--shadow-1);
+  --md-shadow-z2: var(--shadow-2);
+  --md-shadow-z3: var(--shadow-3);
+
+  /* Type. `font: false` in mkdocs.yml means material requests no webfont, and these
+     two names are the whole hook into its font chain. */
+  --md-text-font-family: var(--font-sans);
+  --md-code-font-family: var(--font-mono);
+}
+
+/* Focus. nilam.base is not loaded, so the focus ring comes from here — and it is the
+ * scale's own two tokens, offset included. The offset is not cosmetic: 1.4.11 wants
+ * 3:1 against ADJACENT colours, and the gap guarantees the adjacent colour is the
+ * page rather than the button the ring is drawn on. */
+:focus-visible {
+  outline: var(--ring-width) solid var(--brand-9);
+  outline-offset: var(--ring-offset);
+}
+
+/* The other two element-level leaks base would have closed. */
+::selection {
+  background: var(--brand-9);
+  color: var(--brand-ink);
+}
+:where(input, select, textarea, button, progress, meter) { accent-color: var(--brand-9) }
+
+/* ── 3. admonitions in solved colour ───────────────────────────────────────────
+ *
+ * Material hard-codes a hex per admonition type (#448aff for note, #ff9100 for
+ * warning, and so on) in three rules each: the border, the title strip and the icon.
+ * Left alone, a `!!! warning` on this site would be an unproven orange sitting beside
+ * a paragraph about proving colour.
+ *
+ * Step 7 for the border, because that is the 3:1 role. Step 3 for the strip, because
+ * that is the tinted-surface role and step 12 text is solved against it.
+ */
+.md-typeset :is(.admonition, details) {
+  border-radius: var(--r-4);
+  box-shadow: var(--shadow-1), var(--rim);
+  font-size: var(--text-0);
+}
+.md-typeset :is(.admonition, details):is(.note) { border-color: var(--brand-7) }
+.md-typeset :is(.note) > :is(.admonition-title, summary) { background: var(--brand-3) }
+.md-typeset :is(.note) > :is(.admonition-title, summary)::before { background: var(--brand-9) }
+
+.md-typeset :is(.admonition, details):is(.info, .tip, .abstract) { border-color: var(--info-7) }
+.md-typeset :is(.info, .tip, .abstract) > :is(.admonition-title, summary) { background: var(--info-3) }
+.md-typeset :is(.info, .tip, .abstract) > :is(.admonition-title, summary)::before { background: var(--info-9) }
+
+.md-typeset :is(.admonition, details):is(.warning, .caution) { border-color: var(--warn-7) }
+.md-typeset :is(.warning, .caution) > :is(.admonition-title, summary) { background: var(--warn-3) }
+.md-typeset :is(.warning, .caution) > :is(.admonition-title, summary)::before { background: var(--warn-9) }
+
+.md-typeset :is(.admonition, details):is(.danger, .failure, .bug, .error) { border-color: var(--danger-7) }
+.md-typeset :is(.danger, .failure, .bug, .error) > :is(.admonition-title, summary) { background: var(--danger-3) }
+.md-typeset :is(.danger, .failure, .bug, .error) > :is(.admonition-title, summary)::before { background: var(--danger-9) }
+
+.md-typeset :is(.admonition, details):is(.success, .check, .done) { border-color: var(--ok-7) }
+.md-typeset :is(.success, .check, .done) > :is(.admonition-title, summary) { background: var(--ok-3) }
+.md-typeset :is(.success, .check, .done) > :is(.admonition-title, summary)::before { background: var(--ok-9) }
+
+.md-typeset :is(.admonition, details):is(.example, .quote) { border-color: var(--neutral-7) }
+.md-typeset :is(.example, .quote) > :is(.admonition-title, summary) { background: var(--neutral-3) }
+.md-typeset :is(.example, .quote) > :is(.admonition-title, summary)::before { background: var(--neutral-9) }
+
+/* A few structural bits, so the page's own furniture is nilam's numbers too. */
+.md-typeset :is(pre > code, .highlight > pre) { border-radius: var(--r-4) }
+.md-typeset code { border-radius: var(--r-1) }
+.md-typeset blockquote {
+  border-inline-start: var(--line-2) solid var(--brand-8);
+  color: var(--neutral-11);
+}
+.md-typeset table:not([class]) {
+  border: var(--line-1) solid var(--neutral-6);
+  border-radius: var(--r-4);
+  font-size: var(--text-00);
+}
+.md-typeset table:not([class]) th { background: var(--neutral-2) }
+.md-typeset hr { border-block-start: var(--line-1) solid var(--neutral-6) }
+.md-typeset .tabbed-labels > label { font-size: var(--text-00) }
+
+/* The hero. Material's #only-light / #only-dark suffixes do the mode swap. */
+.md-typeset .nd-hero {
+  border-radius: var(--r-6);
+  border: var(--line-1) solid var(--neutral-6);
+  margin-block-end: var(--space-5);
+}
+
+/* ── 4. the live examples ──────────────────────────────────────────────────────
+ *
+ * Everything inside .nd-demo is real markup, styled by nilam.components.css and
+ * nilam.widgets.css as published. These rules do two things and nothing else:
+ * establish the panel the demo sits in, and undo the .md-typeset defaults that would
+ * otherwise reach into it — material gives every <ul> a bullet and every <p> a top
+ * margin, and a listbox is not prose.
+ */
+.nd-demo {
+  background: var(--surface);
+  border: var(--line-1) solid var(--neutral-6);
+  border-radius: var(--r-5);
+  box-shadow: var(--shadow-1), var(--rim);
+  padding: var(--space-5);
+  margin-block: var(--space-4) var(--space-2);
+  color: var(--neutral-12);
+  font-family: var(--font-sans);
+  font-size: var(--text-1);
+  line-height: var(--leading-normal);
+  /* A demo of a popover, a menu or an open dialog paints outside its own box. */
+  overflow: visible;
+}
+.md-typeset .nd-demo :is(ul, ol) {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.md-typeset .nd-demo li { margin: 0 }
+.md-typeset .nd-demo p { margin: 0 }
+.md-typeset .nd-demo :is(h1, h2, h3, h4) { margin: 0; font-size: inherit }
+.md-typeset .nd-demo code {
+  background: var(--neutral-3);
+  padding: 0.1em 0.3em;
+  font-size: 0.9375em;
+}
+/* Material colours and underlines every <a> in typeset copy. A .n-btn that is an
+   anchor, a menu item and a card link are all links and none of them want that. */
+.md-typeset .nd-demo a { color: inherit }
+.md-typeset .nd-demo a.n-link {
+  color: var(--brand-11);
+  text-decoration-color: var(--brand-8);
+}
+.md-typeset .nd-demo :is(.n-btn, .n-menu-item, .n-card-link) { text-decoration: none }
+.md-typeset .nd-demo table { font-size: var(--text-0) }
+
+/* The caption above a demo. Mono, uppercase, tracked out — the type scale's own
+   --tracking-micro, which exists because micro text at 0 tracking looks cramped. */
+.nd-label {
+  font: var(--weight-medium) var(--text-000) / 1 var(--font-mono);
+  letter-spacing: var(--tracking-micro);
+  text-transform: uppercase;
+  color: var(--neutral-11);
+  margin-block-end: var(--space-2) !important;
+}
+.nd-demo > .nd-label:not(:first-child) { margin-block-start: var(--space-5) !important }
+
+.nd-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+.nd-grid {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+}
+.nd-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.nd-note { font-size: var(--text-00); color: var(--neutral-11) }
+.nd-note b { color: var(--danger-11); font-weight: var(--weight-semibold) }
+
+/* ── 5. the swatch strips ──────────────────────────────────────────────────────
+ *
+ * Painted with var(--<family>-<step>) and nothing else, so a token this page claims
+ * but the stylesheet does not ship renders as an empty cell. The page cannot advertise
+ * a token that does not exist.
+ */
+.nd-scale {
+  display: grid;
+  grid-template-columns: 4.5rem repeat(12, 1fr);
+  gap: 3px;
+  align-items: center;
+  margin-block-end: 3px;
+}
+.nd-scale > span {
+  font: var(--text-000) / 1 var(--font-mono);
+  color: var(--neutral-11);
+}
+.nd-scale i {
+  display: block;
+  block-size: 2rem;
+  border-radius: var(--r-1);
+}
+.nd-scale-nums {
+  display: grid;
+  grid-template-columns: 4.5rem repeat(12, 1fr);
+  gap: 3px;
+  margin-block-end: var(--space-2);
+}
+.nd-scale-nums b {
+  font: var(--text-000) / 1 var(--font-mono);
+  color: var(--neutral-11);
+  text-align: center;
+  font-weight: 400;
+}
+
+/* Two panels on one page, one forced light and one forced dark, with no token
+ * redeclared anywhere. That is what light-dark() buys and it is the thing to look at
+ * rather than read about. */
+.nd-moment {
+  background: var(--neutral-1);
+  border: var(--line-1) solid var(--neutral-6);
+  border-radius: var(--r-5);
+  padding: var(--space-4);
+}
+
+/* The dichromacy chips. */
+.nd-chips { display: flex; gap: var(--space-1) }
+.nd-chips i {
+  flex: 1;
+  block-size: 2.5rem;
+  border-radius: var(--r-2);
+  display: grid;
+  place-items: center;
+  font: var(--weight-bold) 0.75rem / 1 var(--font-mono);
+}
+.nd-prot { filter: url(#nd-protanopia) }
+.nd-deut { filter: url(#nd-deuteranopia) }
+.nd-trit { filter: url(#nd-tritanopia) }
+
+.nd-swatch-big {
+  block-size: 6rem;
+  border-radius: var(--r-6);
+  background: var(--brand-9);
+  box-shadow: 0 0 60px -12px var(--brand-9);
+  display: grid;
+  place-items: center;
+  color: var(--brand-ink);
+  font: var(--weight-semibold) var(--text-2) / 1 var(--font-mono);
+}
+.nd-facts { font: var(--text-00) / 1.9 var(--font-mono); color: var(--neutral-11) }
+.nd-facts b { color: var(--neutral-12); font-weight: var(--weight-medium) }
+
+/* ── 6. two presentation shims, named because they are shims ───────────────────
+ *
+ * A <dialog> is position:absolute in every UA stylesheet and a [popover] is
+ * display:none until it is shown, so neither renders in the flow of a page. Both demos
+ * below therefore exist twice: a real one behind a button, and a static copy pinned
+ * into the page so that it is visible in a screenshot and to a reader who does not
+ * click. These two rules are what pin the copy. They are the only place on this site
+ * where a component is not shown exactly as it ships.
+ */
+.nd-demo .nd-static-dialog {
+  position: static;
+  margin: 0;
+  inline-size: 100%;
+}
+.nd-demo .nd-static-pop { opacity: 1 }

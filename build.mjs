@@ -33,8 +33,19 @@ if (failures.length) {
 }
 console.log(`\n  ${count} assertions, all passed`);
 
+/* The wide-gamut palette: solved against the P3 boundary and proven independently. Both
+ * must pass or nothing is written — a P3 block that fails its own contracts is worse than
+ * no P3 block, because it only misbehaves on the better screens. */
+const p3 = solvePalette(hue, { semanticHues: chosen.hues, gamut: 'display-p3' });
+const p3Proof = prove(p3);
+console.log(`\n  display-p3: ${p3Proof.count} assertions, ${p3Proof.failures.length ? p3Proof.failures.length + ' FAILED' : 'all passed'}`);
+if (p3Proof.failures.length) {
+  for (const f of p3Proof.failures) console.error(`    - ${f}`);
+  process.exit(1);
+}
+
 /* The tokens. */
-const tokens = toCss(palette, { assertions: count });
+const tokens = toCss(palette, { assertions: count + p3Proof.count, p3 });
 writeFileSync(join(root, 'nilam.tokens.css'), tokens);
 
 /* The single-import convenience build, concatenated from the parts so it cannot drift

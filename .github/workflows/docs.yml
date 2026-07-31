@@ -1,0 +1,98 @@
+# nilam — the documentation site.
+#
+# Publishes the mkdocs-material site at jvoltci.github.io/nilam/, with the showcase
+# page from demo/ carried along at /demo/.
+#
+# THE ASSERTIONS GATE THE DEPLOY. build.mjs solves the palette, proves it, and only
+# then writes the stylesheets — so a failing contrast contract aborts before mkdocs is
+# ever invoked. A site that documents tokens which fail their own targets is worse than
+# no site, because it looks authoritative.
+#
+# No `paths:` filter. The site is styled by nilam.tokens.css, driven by
+# src/behaviours/, illustrated by assets/hero-*.svg and includes demo/index.html — a
+# filter listing all of that is every path in the repo, and the failure mode of getting
+# one wrong is a site that quietly stops updating.
+
+name: Docs
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# GitHub's own recommendation for Pages: one queue, and do NOT cancel in progress.
+# Cancelling a half-finished deployment leaves the live site on the previous artifact,
+# and two docs commits in a row should both land.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      # Solve, prove, emit. Exits non-zero on any failed assertion and writes nothing,
+      # so the stylesheets the site is about to be painted with are the ones that just
+      # passed 500 assertions rather than whatever was committed.
+      - name: Solve the palette and prove it
+        run: node build.mjs
+
+      - name: Assert the palette, the token export and the keyboard contracts
+        run: npm test
+
+      # No `npm ci`. The package has zero dependencies and zero devDependencies, and CI
+      # asserts that — so there is nothing to install.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Build the site
+        run: |
+          pip install --quiet -r requirements.txt
+          mkdocs build --strict --site-dir _site
+
+      # hooks/nilam_assets.py reaches outside docs_dir to serve the shipped files. If
+      # that ever silently stops working the site still builds and still renders — in
+      # material's default indigo, with every nilam token undefined. Assert instead.
+      - name: Assert the site is painted by the shipped stylesheets
+        run: |
+          set -euo pipefail
+          for f in nilam.tokens.css nilam.scale.css nilam.components.css \
+                   nilam.widgets.css nilam.css src/behaviours/index.mjs \
+                   assets/hero-light.svg demo/index.html; do
+            test -f "_site/$f" || { echo "::error::_site/$f missing — the hook did not run"; exit 1; }
+          done
+          grep -q 'light-dark(' _site/nilam.tokens.css \
+            || { echo "::error::the published tokens contain no light-dark()"; exit 1; }
+          touch _site/.nojekyll
+          echo "site: $(du -sh _site | cut -f1)"
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  # Pull requests run the build above — which is where --strict catches a broken link —
+  # but must not publish. A fork's PR would otherwise deploy to the live site.
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

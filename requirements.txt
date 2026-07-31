@@ -1,0 +1,7 @@
+# Docs site only. NOTHING here belongs in package.json: CI asserts nilam has zero
+# dependencies and zero devDependencies, and mkdocs is Python anyway.
+#
+# Pinned to a minor range rather than floated. A material minor release can rename a
+# --md-* variable, and docs/stylesheets/extra.css redeclares about forty of them; the
+# failure mode is a page that still builds and renders in material's indigo.
+mkdocs-material>=9.7,<10

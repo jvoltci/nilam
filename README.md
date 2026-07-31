@@ -88,6 +88,59 @@ system. That is the claim, and it is a narrow one.
 
 ---
 
+## Your brand hue probably cannot be blue
+
+The most useful thing this tool has produced, and it was not anticipated.
+
+Sweeping all 360 degrees, **only hues around 285–315 clear the separation floor.** Every
+blue fails. The reason is not a threshold artefact:
+
+> Tritanopia removes blue–yellow discrimination. A blue brand at 240–270 loses its blue
+> component and drifts toward the grey-green that `ok` has to occupy. A violet brand at 285+
+> keeps a red component, so under the same simulation it moves toward pink and stays clear.
+
+So **if your statuses are red / amber / green, your brand hue cannot be blue** — not for a
+tritanope. Blue is the commonest brand colour in software and essentially nobody accounts
+for this. It is only visible because the hues are chosen by search rather than by taste.
+
+Refusing to emit anything for a blue brand would make the package unusable for most real
+projects, and lowering the floor to let it pass would be dishonest. So:
+
+```bash
+npx nilam 262 --brand-locked --css=tokens.css
+```
+
+`--brand-locked` moves brand-versus-status from **asserted** to **measured** — the same
+treatment red-versus-green already receives, because the collapse is equally unavoidable.
+The collapse is reported, and `proveStatusChannels()` then **fails the build** unless those
+components carry a glyph. Nothing is weakened; the obligation moves from the palette to the
+component, where it can actually be discharged.
+
+---
+
+## Display-P3
+
+Two palettes, both proven. The sRGB one is the base; a second is solved against the P3
+boundary, verified against P3 luminance, and emitted behind `@media (color-gamut: p3)`.
+
+The tempting one-liner is to emit an out-of-range `oklch()` and let the browser gamut-map
+it. That is rejected deliberately: gamut mapping is the browser's algorithm, it may move
+lightness to preserve hue, and it therefore changes contrast by an amount nothing here
+measured. `color(display-p3 …)` pins the value, so the colour that paints is the colour
+that was proven.
+
+Measured gain — modest at the signature hue, largest on the statuses:
+
+| | sRGB | P3 | |
+|---|---|---|---|
+| brand solid | 0.238 | 0.256 | +8% |
+| brand glow | 0.189 | 0.205 | +8% |
+| danger | 0.250 | 0.282 | +13% |
+| warn | 0.165 | 0.189 | +15% |
+| ok | 0.209 | 0.246 | +18% |
+
+---
+
 ## Limitations
 
 Stated plainly, because the package makes accessibility claims and those claims have
@@ -111,8 +164,6 @@ diverges from specification. Where certified AT behaviour is a requirement, pair
 optimised separation until `danger` resolved to magenta, with every assertion passing. The
 hue windows in `solve.mjs` exist because of it. This class of error is only visible by
 rendering.
-
-**Gamut.** sRGB only. Display-P3 is not yet supported; all values are gamut-clamped.
 
 **One value is chosen, not derived.** `GLOW_L = 0.66`, the dark-mode solid's lightness.
 Four derivations were attempted and none produce it; it is measured from two reference
@@ -273,7 +324,7 @@ silently un-hides a hidden element.
 npm test
 ```
 
-7,064 assertions. They cover three separate things:
+7,430 assertions. They cover three separate things:
 
 1. **The solver** — every role contract, gamut, interaction-state perceptibility, and the
    dichromacy separation floor.

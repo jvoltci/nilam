@@ -13,14 +13,15 @@
  * package.json "files". Every colour assertion was green. The package was broken.
  */
 
-import { readFileSync, readdirSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { execFileSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { solvePalette, solveSemanticHues, inkFor, NILAM_HUE, GLOW_L } from '../src/solve.mjs';
 import { prove, proveStatusChannels, proveDichromacy } from '../src/prove.mjs';
-import { contrast, hexToOklch, toHex, fmt } from '../src/colour.mjs';
+import { contrast, contrastIn, hexToOklch, toHex, fmt, fmtIn, gammaDecode, maxChroma, maxChromaIn } from '../src/colour.mjs';
 import { toCss } from '../src/css.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -162,6 +163,96 @@ check(css.includes('light-dark('), 'the emitted CSS no longer uses light-dark() 
 check(/color-scheme:\s*light dark/.test(css), 'the root does not set `color-scheme: light dark`, so light-dark() cannot resolve and no colour will paint');
 check(/\.dark[^{]*\{\s*color-scheme:\s*dark/.test(css), '.dark no longer sets color-scheme, so forcing dark mode does nothing');
 
+/* ── 4b. the wide-gamut block, audited where it SHIPS ─────────────────────
+ *
+ * build.mjs already proves the P3 palette — 500 assertions against P3 luminance. That is
+ * not enough, and the reason is the rule this file keeps relearning: an assertion that
+ * shares its premise with the thing it audits is not an audit. Those 500 measure the
+ * solver's OBJECTS. What a P3 display paints is the `color(display-p3 r g b)` string in the
+ * emitted file, after a matrix multiply, a gamma encode, a clamp and a round to 5 places.
+ *
+ * So this parses those strings back out of the CSS and re-derives the ratios from the
+ * shipped digits. It would catch a transposed matrix row, a missing gamma encode, or a
+ * rounding step that quietly pushed a border under 3:1 — none of which the object-level
+ * assertions can see, because every one of them happens after the objects are done.
+ */
+
+const p3Palette = solvePalette(NILAM_HUE, { semanticHues: chosen.hues, gamut: 'display-p3' });
+const cssP3 = toCss(palette, { assertions: proof.count, p3: p3Palette });
+
+check(/@media \(color-gamut: p3\)/.test(cssP3), 'the emitted CSS has no @media (color-gamut: p3) block — wide-gamut support silently vanished');
+check(
+  cssP3.includes('color(display-p3'),
+  'the P3 block emits no color(display-p3 …) values. oklch() there would be re-mapped by the browser, so the painted colour would not be the colour that was proven',
+);
+
+/* Parse the P3 block only, so sRGB tokens above cannot be mistaken for it. */
+const p3Section = cssP3.slice(cssP3.indexOf('@media (color-gamut: p3)'));
+const p3Tokens = { light: new Map(), dark: new Map() };
+const P3_RE = /--([a-z0-9-]+):\s*light-dark\(\s*color\(display-p3([^)]*)\)\s*,\s*color\(display-p3([^)]*)\)\s*\)/g;
+for (const m of p3Section.matchAll(P3_RE)) {
+  p3Tokens.light.set(m[1], m[2].trim().split(/\s+/).map(Number));
+  p3Tokens.dark.set(m[1], m[3].trim().split(/\s+/).map(Number));
+}
+check(p3Tokens.light.size > 70, `only ${p3Tokens.light.size} P3 tokens parsed out of the emitted block`);
+
+/* Relative luminance from the SHIPPED digits: gamma-decode, then the Display-P3 luminance
+ * coefficients. Not the sRGB triple — P3 has different primaries, so 0.2126/0.7152/0.0722
+ * would silently misreport every ratio here. */
+const p3Y = ([r, g, b]) =>
+  0.2289745641 * gammaDecode(r) + 0.6917385218 * gammaDecode(g) + 0.0792869141 * gammaDecode(b);
+const p3Ratio = (a, b) => {
+  const [hi, lo] = p3Y(a) >= p3Y(b) ? [p3Y(a), p3Y(b)] : [p3Y(b), p3Y(a)];
+  return (hi + 0.05) / (lo + 0.05);
+};
+
+for (const mode of ['light', 'dark']) {
+  for (const fam of ['neutral', 'brand', 'danger', 'warn', 'ok', 'info']) {
+    const at = (n) => p3Tokens[mode].get(`${fam}-${n}`);
+    const ink = p3Tokens[mode].get(`${fam}-ink`);
+    for (let n = 1; n <= 12; n++) {
+      check(at(n) != null, `P3 ${mode}: --${fam}-${n} is missing from the wide-gamut block`);
+      if (at(n)) {
+        check(
+          at(n).length === 3 && at(n).every((v) => Number.isFinite(v) && v >= 0 && v <= 1),
+          `P3 ${mode}: --${fam}-${n} is ${JSON.stringify(at(n))} — a channel outside [0,1] means the gamut clamp did not run`,
+        );
+      }
+    }
+    if (!at(1) || !ink) continue;
+
+    /* The same four contracts the sRGB block is held to, re-derived from P3 digits. */
+    check(p3Ratio(at(11), at(3)) >= 4.5,
+      `P3 ${mode}/${fam}: body text on a component surface is ${p3Ratio(at(11), at(3)).toFixed(2)}:1 as emitted (WCAG 1.4.3)`);
+    check(p3Ratio(at(12), at(1)) >= 7,
+      `P3 ${mode}/${fam}: strong text on the page is ${p3Ratio(at(12), at(1)).toFixed(2)}:1 as emitted`);
+    check(p3Ratio(at(9), at(1)) >= 3,
+      `P3 ${mode}/${fam}: the solid is ${p3Ratio(at(9), at(1)).toFixed(2)}:1 on the page as emitted (WCAG 1.4.11)`);
+    check(p3Ratio(at(7), at(3)) >= 3,
+      `P3 ${mode}/${fam}: the control border is ${p3Ratio(at(7), at(3)).toFixed(2)}:1 on a component surface as emitted (WCAG 1.4.11)`);
+    check(p3Ratio(ink, at(9)) >= 4.5,
+      `P3 ${mode}/${fam}: --${fam}-ink is ${p3Ratio(ink, at(9)).toFixed(2)}:1 on the solid as emitted — the button cannot be labelled`);
+  }
+}
+
+/* P3 must actually BUY something, or the whole block is 9 kB of duplication. It must also
+ * never buy less: a gamut that contains sRGB cannot have a smaller boundary anywhere, so a
+ * P3 chroma below the sRGB one means a matrix is wrong rather than a trade-off being made. */
+let richer = 0;
+for (const mode of ['light', 'dark']) {
+  for (const fam of ['brand', 'danger', 'warn', 'ok']) {
+    const s = palette[mode][fam][9];
+    const w = p3Palette[mode][fam][9];
+    check(
+      w.C >= s.C - 1e-6,
+      `P3 ${mode}/${fam}: step 9 chroma is ${w.C.toFixed(4)} in P3 but ${s.C.toFixed(4)} in sRGB — ` +
+        `P3 contains sRGB, so it cannot be narrower. A gamut matrix is transposed.`,
+    );
+    if (w.C > s.C + 1e-4) richer++;
+  }
+}
+check(richer >= 6, `only ${richer} of 8 status/brand solids gained chroma in P3 — the block is not earning its bytes`);
+
 /* ── 5. the package ships what it claims ─────────────────────────────────── */
 
 const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
@@ -254,6 +345,41 @@ for (const status of ['ok', 'warn', 'danger', 'info']) {
     new RegExp(`\\.n-note-${status}\\s+\\.n-note-glyph`).test(components),
     `.n-note-${status} has no glyph rule — the prover says ${status} collapses under dichromacy and requires a second channel (WCAG 1.4.1)`,
   );
+}
+
+/* ── 6. the CLI emits the same thing the build does ──────────────────────
+ *
+ * src/cli.mjs carried its own copy of toCss() for several commits. The build emitted one
+ * light-dark() block with cascade layers and a P3 media query; the CLI emitted separate
+ * :root and .dark blocks with neither. The `npx nilam --css=` in the README therefore
+ * produced a materially worse file than `npm run build`, and every assertion in this file
+ * passed, because none of them ran the CLI.
+ *
+ * Two code paths that must agree, and nothing checking that they do. So: run it. */
+{
+  const out = join(tmpdir(), `nilam-cli-${process.pid}.css`);
+  try {
+    execFileSync(process.execPath, [join(root, 'src/cli.mjs'), '285', `--css=${out}`],
+      { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+    const cli = readFileSync(out, 'utf8');
+    for (const [needle, why] of [
+      ['light-dark(', 'the CLI is not emitting light-dark() — it has its own stale emitter again'],
+      ['@layer nilam.tokens', 'the CLI output has no cascade layers, so consumers cannot override it without !important'],
+      ['@media (color-gamut: p3)', 'the CLI output has no wide-gamut block'],
+      ['--brand-ink', 'the CLI output has no ink token, so filled buttons cannot be labelled safely'],
+      ['--surface', 'the CLI output has no --surface, so the untinted card is inexpressible'],
+    ]) {
+      check(cli.includes(needle), `${why} (missing "${needle}")`);
+    }
+    // Byte-identical to the library path, or they have started to drift again.
+    check(
+      cli === toCss(palette, { p3: p3Palette }),
+      'the CLI output differs from toCss() — the two emitters have drifted apart again',
+    );
+    rmSync(out, { force: true });
+  } catch (err) {
+    fails.push(`the CLI failed to run: ${err.message}`);
+  }
 }
 
 /* ── report ──────────────────────────────────────────────────────────────── */

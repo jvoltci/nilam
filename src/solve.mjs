@@ -25,7 +25,8 @@
  */
 
 import {
-  contrast, distance, inGamut, maxChroma, simulate, solveLightness, CVD_TYPES,
+  contrast, contrastIn, distance, inGamut, inGamutOf, maxChroma, maxChromaIn,
+  simulate, solveLightness, GAMUTS, CVD_TYPES,
 } from './colour.mjs';
 
 /* ── the role model ──────────────────────────────────────────────────────
@@ -89,10 +90,13 @@ const NEUTRAL_CHROMA = 0.007;
  * downstream of it is asserted. What is NOT claimed is that it was derived. */
 export const GLOW_L = 0.66;
 
-const chromaFor = (step, neutral) => (L, h) =>
+/* The envelope is a FRACTION of the in-gamut maximum, which is what makes one solver serve
+ * both gamuts: on a P3 display the same 0.92 at step 9 simply reaches further, because the
+ * boundary it is a fraction of is further out. Nothing about the role model changes. */
+const chromaFor = (step, neutral, gamut) => (L, h) =>
   neutral
-    ? Math.min(maxChroma(L, h) * 0.9, NEUTRAL_CHROMA)
-    : maxChroma(L, h) * ENVELOPE[step];
+    ? Math.min(maxChromaIn(L, h, gamut) * 0.9, NEUTRAL_CHROMA)
+    : maxChromaIn(L, h, gamut) * ENVELOPE[step];
 
 /* ── one scale, solved ───────────────────────────────────────────────── */
 
@@ -110,7 +114,8 @@ export const NILAM_HUE = 285;
 
 export function solveScale(hue, mode, opts = {}) {
   const light = mode === 'light';
-  const chroma = (step) => chromaFor(step, opts.neutral === true);
+  const gamut = opts.gamut ?? 'srgb';
+  const chroma = (step) => chromaFor(step, opts.neutral === true, gamut);
 
   // Step 1 is the anchor and the only value not solved from a contrast target:
   // it is the page, so it is chosen, and everything else is solved against it.
@@ -132,6 +137,7 @@ export function solveScale(hue, mode, opts = {}) {
       target: surfaceTargets[step], against: s[1], hue,
       direction: light ? 'darker' : 'lighter',
       chromaAt: chroma(step),
+      gamut,
       ...(light ? { hi: L1 } : { lo: L1 }),
     });
   }
@@ -159,6 +165,7 @@ export function solveScale(hue, mode, opts = {}) {
     target: 1.55, against: s[1], hue,
     direction: light ? 'darker' : 'lighter',
     chromaAt: chroma(6),
+      gamut,
     ...(light ? { hi: L1 } : { lo: L1 }),
   });
   for (const [step, target] of [[7, 3.05], [8, 4.2]]) {
@@ -166,6 +173,7 @@ export function solveScale(hue, mode, opts = {}) {
       target, against: s[3], hue,
       direction: light ? 'darker' : 'lighter',
       chromaAt: chroma(step),
+      gamut,
     });
   }
 
@@ -174,11 +182,12 @@ export function solveScale(hue, mode, opts = {}) {
   // label (4.5:1, 1.4.3). Which ink wins is hue-dependent: white sits on a blue
   // solid, black on a yellow one. And the answer differs by MODE, which is the
   // thing the first version got wrong — see solveSolid.
-  s[9] = solveSolid(hue, s[1], chroma(9), light);
+  s[9] = solveSolid(hue, s[1], chroma(9), light, gamut);
   s[10] = solveLightness({
-    target: contrast(s[9], s[1]) * 1.18, against: s[1], hue,
+    target: contrastIn(s[9], s[1], gamut) * 1.18, against: s[1], hue,
     direction: light ? 'darker' : 'lighter',
     chromaAt: chroma(10),
+      gamut,
     ...(light ? { hi: s[9].L } : { lo: s[9].L }),
   });
 
@@ -191,6 +200,7 @@ export function solveScale(hue, mode, opts = {}) {
       target, against: s[3], hue,
       direction: light ? 'darker' : 'lighter',
       chromaAt: chroma(step),
+      gamut,
     });
   }
 
@@ -233,11 +243,11 @@ export function solveScale(hue, mode, opts = {}) {
  * above it. For an amber, black ink stays legible all the way up, so the PAGE bound
  * binds instead. Neither hue needs a special case and neither gets one.
  */
-export function solveSolid(hue, page, chromaAt, light) {
+export function solveSolid(hue, page, chromaAt, light, gamut = 'srgb') {
   const white = { L: 1, C: 0, h: hue };
   const black = { L: 0.16, C: 0, h: hue };
-  const onPage = (c) => contrast(c, page) >= 3.05;                  // an object on the page
-  const carries = (c, ink) => contrast(ink, c) >= 4.55;             // carries its own label
+  const onPage = (c) => contrastIn(c, page, gamut) >= 3.05;         // an object on the page
+  const carries = (c, ink) => contrastIn(ink, c, gamut) >= 4.55;    // carries its own label
 
   /* The ink the mode WANTS, and this is the part the first rewrite left out.
    *
@@ -257,7 +267,7 @@ export function solveSolid(hue, page, chromaAt, light) {
   const scan = (ink, from, to, step) => {
     for (let L = from; step < 0 ? L >= to : L <= to; L += step) {
       const c = { L, C: chromaAt(L, hue), h: hue };
-      if (inGamut(c) && onPage(c) && carries(c, ink)) return c;
+      if (inGamutOf(c, gamut) && onPage(c) && carries(c, ink)) return c;
     }
     return null;
   };
@@ -285,7 +295,7 @@ export function solveSolid(hue, page, chromaAt, light) {
 
   // Dark mode: the glow band first, since that is the whole point of it.
   const glow = { L: GLOW_L, C: chromaAt(GLOW_L, hue), h: hue };
-  if (inGamut(glow) && onPage(glow) && carries(glow, preferred)) return glow;
+  if (inGamutOf(glow, gamut) && onPage(glow) && carries(glow, preferred)) return glow;
   // Off the band, prefer DARKEST legal — on a dark page the solid still has to be
   // the lighter object, so walking up from the floor keeps it as close to the band
   // as the constraints allow rather than flying to near-white.
@@ -438,14 +448,14 @@ export function solveSemanticHues(brandHue, { step = 2 } = {}) {
 
 /* ── the whole palette ───────────────────────────────────────────────── */
 
-export function solvePalette(brandHue, { semanticHues } = {}) {
+export function solvePalette(brandHue, { semanticHues, gamut = 'srgb' } = {}) {
   const hues = semanticHues ?? solveSemanticHues(brandHue).hues;
-  const out = { brandHue, semanticHues: hues, light: {}, dark: {} };
+  const out = { brandHue, semanticHues: hues, gamut, light: {}, dark: {} };
   for (const mode of ['light', 'dark']) {
-    out[mode].neutral = solveScale(brandHue, mode, { neutral: true });
-    out[mode].brand = solveScale(brandHue, mode);
+    out[mode].neutral = solveScale(brandHue, mode, { neutral: true, gamut });
+    out[mode].brand = solveScale(brandHue, mode, { gamut });
     for (const [name, h] of Object.entries(hues)) {
-      out[mode][name] = solveScale(h, mode);
+      out[mode][name] = solveScale(h, mode, { gamut });
     }
     // info is the neutral scale. See the note on WINDOWS.
     out[mode].info = out[mode].neutral;

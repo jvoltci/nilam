@@ -328,10 +328,20 @@
   /* Invalid, but only once the user has finished — :invalid alone paints an empty
      required field red before it has been touched, which is hostile. user-invalid is
      the correct selector and it is Baseline. */
-  .n-input:user-invalid, .n-textarea:user-invalid, .n-select:user-invalid {
+  .n-input:user-invalid, .n-textarea:user-invalid, .n-select:user-invalid,
+  .n-input[aria-invalid='true'], .n-textarea[aria-invalid='true'], .n-select[aria-invalid='true'] {
     border-color: var(--danger-8);
   }
-  .n-input:user-invalid:focus-visible { box-shadow: 0 0 0 var(--ring-width) var(--danger-6); }
+  .n-input:user-invalid:focus-visible,
+  .n-input[aria-invalid='true']:focus-visible { box-shadow: 0 0 0 var(--ring-width) var(--danger-6); }
+
+  /* [aria-invalid] is not a duplicate of :user-invalid, it is the case :user-invalid cannot
+   * reach. :user-invalid only fires for constraints the BROWSER evaluates — required, type,
+   * pattern. An application-level rule ("that is not a magnet URI", "this username is taken")
+   * has no browser constraint to violate, so on a plain valid text field :user-invalid never
+   * matches and the border stayed neutral while the error text below it said otherwise.
+   * Since aria-invalid is the attribute assistive tech reads anyway, styling it means the
+   * visual state and the announced state cannot disagree. */
 
   .n-textarea {
     /* Grows with content where supported, and stays a normal resizable textarea where
@@ -360,14 +370,24 @@
   /* Help and error text, wired with aria-describedby in markup. The error carries a
      glyph because danger is one of the colours the prover says collapses. */
   .n-hint { font-size: var(--text-00); color: var(--neutral-11); }
+  /* NOT flex, for the same reason .n-summary is not — and this one survived the fix there.
+   *
+   * Flex makes every text node AND every inline element its own flex item, so the gap opens
+   * a hole either side of any <code>, <strong> or <a> mid-sentence. The comment on
+   * .n-summary warns about exactly this trap and this component sat one screenful away
+   * still falling into it.
+   *
+   * Block layout with the glyph as an inline ::before keeps the message as prose. */
   .n-error {
-    display: flex;
-    align-items: center;
-    gap: var(--space-1);
+    display: block;
     font-size: var(--text-00);
     color: var(--danger-11);
   }
-  .n-error::before { content: '⚠'; font-size: 0.9em; }
+  .n-error::before {
+    content: '⚠';
+    font-size: 0.9em;
+    margin-inline-end: 0.35em;
+  }
 
   /* ── checkbox, radio, switch ─────────────────────────────────────────────── */
 
@@ -569,7 +589,14 @@
   .n-table-key { color: var(--neutral-12); font-weight: var(--weight-medium); }
   /* Tabular figures, so columns of numbers line up. Nothing else makes a table look
      as unfinished as proportional digits. */
-  .n-table-num { text-align: end; font-variant-numeric: tabular-nums; color: var(--neutral-12); }
+  /* nowrap because a measurement is one token to a reader: "1.4 GB" breaking to "1.4 / GB"
+   * at a narrow width destroys the column that tabular-nums exists to line up. */
+  .n-table-num {
+    text-align: end;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    color: var(--neutral-12);
+  }
   .n-table tbody tr:hover td { background: var(--neutral-2); }
 
   /* Wrapper that scrolls a wide table without breaking the page. tabindex="0" in markup
@@ -793,8 +820,23 @@
 
   /* ── skeleton ───────────────────────────────────────────────────────────── */
 
+  /* Steps 5 and 7, not 3 and 4, and the reason is a measured defect.
+   *
+   * In DARK mode --surface and --neutral-3 have IDENTICAL lightness — 0.2455 both, differing
+   * only by 0.007 of chroma, which is 1.0009:1. So a skeleton built from step 3 was
+   * completely invisible on a card, and only the step-4 shimmer stop showed, and only while
+   * it travelled. That is not a subtle miss: the component whose entire job is to say
+   * "content is coming" said nothing on the surface it is most often placed on. It was true
+   * in this file's own showcase for several releases.
+   *
+   * It happens because solveScale deliberately sets the dark surface to step 3's lightness
+   * with the tint removed — the card is the untinted version of the component surface. Good
+   * for cards, fatal for anything drawn ON one out of step 3.
+   *
+   * 5 -> 7 measures 1.18:1 against a dark card and 1.38:1 against the dark page, with a
+   * 2.59:1 travelling stop. Still quiet on the page, and actually present on a card. */
   .n-skeleton {
-    background: linear-gradient(90deg, var(--neutral-3) 25%, var(--neutral-4) 50%, var(--neutral-3) 75%);
+    background: linear-gradient(90deg, var(--neutral-5) 25%, var(--neutral-7) 50%, var(--neutral-5) 75%);
     background-size: 200% 100%;
     border-radius: var(--r-2);
     animation: n-shimmer 1.4s ease-in-out infinite;

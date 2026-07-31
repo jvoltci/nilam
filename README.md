@@ -138,6 +138,28 @@ the colour that was verified. Chroma gained:
 
 ---
 
+## A name collision to know about
+
+nilam's `--text-000` … `--text-7` are **font sizes**. A great many codebases use `--text-*`
+for text *colours*, which is the more intuitive reading of the name.
+
+If yours does, the two collide silently and in the worst way available: nilam's
+`font-size: var(--text-1)` is handed a colour, the declaration becomes invalid at
+computed-value time, and the element quietly inherits its parent's size instead of erroring.
+Nothing warns you.
+
+One app had to rename 88 usages to adopt nilam. Check before installing:
+
+```bash
+grep -rn -- "--text-[0-9a-z]" src/
+```
+
+The names are not changing — five applications depend on them — so this is documented rather
+than fixed. If the collision is yours, rename your colours; the sizes are the ones referenced
+from inside the package.
+
+---
+
 ## Limitations
 
 Stated plainly, because the package makes accessibility claims and those claims have
@@ -161,6 +183,14 @@ diverges from specification. Where certified AT behaviour is a requirement, pair
 without constraint resolves `danger` to magenta while every assertion passes, which is why
 `solve.mjs` bounds each semantic hue to a window where the word still means itself. This
 class of error is only visible by rendering.
+
+**Categorical data.** nilam solves one brand hue plus three statuses. It has nothing for an
+interface needing 12–17 *separable identities* — a DAW's tracks, a calendar's people, a map's
+regions. That is a different problem: the goal is mutual distinguishability rather than a
+contract against a background, and a single-hue ramp cannot supply it. Measured in a real app,
+of 136 pairs among 17 hand-picked lane colours **23 collapse under deuteranopia** — so
+hand-picking does not solve it either, it just fails without telling you. Past about three
+categories, use a channel that is not colour.
 
 **One value is chosen, not derived.** `GLOW_L = 0.66`, the dark-mode solid's lightness. No
 contrast requirement produces it — in light mode the constraints bind and select the value,

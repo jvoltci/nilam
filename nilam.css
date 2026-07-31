@@ -1265,10 +1265,14 @@
   .n-dialog {
     /* margin: auto is what centres a modal <dialog>, and it comes from the UA sheet rather
      * than from anything here — so any reset that zeroes margins silently pins the modal to
-     * the top-left corner. Tailwind's preflight does exactly that: `margin: 0` on
-     * `*, ::after, ::before, ::backdrop`. Setting padding without restoring margin meant every
-     * Tailwind v4 consumer of nilam got a top-left dialog, and it was found by looking at a
-     * screenshot rather than by reading either stylesheet, because neither is wrong alone. */
+     * the top-left corner. ANY margin-zeroing reset does it — Tailwind's preflight
+     * (`margin: 0` on `*, ::after, ::before, ::backdrop`) and the hand-written
+     * `* { margin: 0; padding: 0 }` that half the web starts with. Two separate apps hit it,
+     * one Tailwind and one not, which is how the cause got correctly generalised: the first
+     * fix here blamed Tailwind and would have left the other one broken.
+     *
+     * Found by looking at a screenshot rather than by reading either stylesheet, because
+     * neither is wrong on its own. */
     margin: auto;
     padding: 0;
     border: var(--line-1) solid var(--neutral-6);

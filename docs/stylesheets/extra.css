@@ -92,7 +92,12 @@ html:has(body[data-md-color-scheme='slate']) { color-scheme: dark }
   --md-primary-fg-color--light: var(--brand-8);
   --md-primary-fg-color--dark: var(--brand-10);
   --md-primary-bg-color: var(--brand-ink);
-  --md-primary-bg-color--light: color-mix(in oklab, var(--brand-ink) 70%, transparent);
+  /* 85%, not material's ~70%. This variable paints the search placeholder, and measured
+     over the dark-mode glow, 70% of --brand-ink lands at about 3.8:1 while 85% clears
+     4.5:1. A dim placeholder is conventional, and nilam's own field documentation says
+     placeholder text is text and 1.4.3 applies to it — shipping a 3.8:1 placeholder on
+     the page that says so would be the site contradicting itself. */
+  --md-primary-bg-color--light: color-mix(in oklab, var(--brand-ink) 85%, transparent);
 
   --md-accent-fg-color: var(--brand-10);
   --md-accent-fg-color--transparent: color-mix(in oklab, var(--brand-9) 10%, transparent);
@@ -280,6 +285,49 @@ html:has(body[data-md-color-scheme='slate']) { color-scheme: dark }
 }
 .md-typeset .nd-demo li { margin: 0 }
 .md-typeset .nd-demo p { margin: 0 }
+
+/* THE ONE COLLISION THAT MATTERS, and it took a screenshot to find.
+ *
+ * mkdocs-material's reset contains, unlayered:
+ *
+ *     button { background: #0000; border: 0; margin: 0; padding: 0 }
+ *     input  { border: 0; outline: none }
+ *
+ * Unlayered author styles beat every layer regardless of specificity, so inside these
+ * pages a .n-btn had no background, no border and no padding, and a .n-input had no
+ * border — the demo of a solved 3:1 control border was rendering with no border at all.
+ *
+ * `revert-layer` is the fix, and specifically NOT a restatement of nilam's values.
+ * Rolling the cascade back one layer hands each property to the highest-priority
+ * declaration in @layer nilam.components, so .n-btn-fill's --brand-9 wins exactly as it
+ * does in an app. Restating `background: var(--brand-9)` here would have worked too, and
+ * would have meant the demos were painted by the docs rather than by the package —
+ * which is the one thing they must not be.
+ *
+ * `font` is deliberately not reverted: material's `font-family: inherit` on button is
+ * the same thing nilam.base does, and reverting would drop controls to the UA's 13px
+ * Arial. `outline` is left alone so the focus ring in section 2 still lands. */
+.md-typeset .nd-demo :is(button, input, select, textarea, progress) {
+  background: revert-layer;
+  border: revert-layer;
+  padding: revert-layer;
+  margin: revert-layer;
+}
+
+/* And the other half of what base would have done. nilam.base.css contains
+ *
+ *     button, input, select, textarea, optgroup { font: inherit }
+ *
+ * because controls do not inherit the page font — the oldest bug in CSS. Material's
+ * reset covers `button` and `input` and not `select` or `textarea`, so the .n-textarea
+ * demo rendered in the UA's monospace default. font-family is stated (base is not
+ * loaded, so something has to say it) and font-size is reverted, so .n-btn-sm and
+ * .n-menu-item keep the sizes nilam's own layer gives them. */
+.md-typeset .nd-demo :is(button, input, select, textarea, optgroup) {
+  font-family: var(--font-sans);
+  font-size: revert-layer;
+  letter-spacing: inherit;
+}
 .md-typeset .nd-demo :is(h1, h2, h3, h4) { margin: 0; font-size: inherit }
 .md-typeset .nd-demo code {
   background: var(--neutral-3);

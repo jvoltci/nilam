@@ -1,7 +1,8 @@
-# Tokens
+# Platform export
 
 nilam solves its palette from contrast requirements. This page is about getting that
-palette **out of CSS** — into Figma, into an iOS app, into a build pipeline.
+palette **out of CSS** — into Figma, into an iOS app, into a build pipeline. For the tokens
+themselves, the swatches and the theming, see [Tokens](palette.md).
 
 Everything below comes from one function. Nothing is hand-maintained, so nothing can
 drift from the stylesheet.

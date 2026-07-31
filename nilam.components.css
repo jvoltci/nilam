@@ -235,40 +235,10 @@
     30%           { opacity: 1;   scale: 1; }
   }
 
-  /* ── loaders under prefers-reduced-motion ────────────────────────────────
-   *
-   * The base layer's blanket rule sets animation-duration to 0.01ms on everything, which
-   * for a loader is actively harmful: a FROZEN spinner does not read as "reduced motion",
-   * it reads as "this app has hung". The reader loses the only signal that anything is
-   * still happening.
-   *
-   * WCAG 2.3.3 governs non-essential animation, and a loading indicator is essential by
-   * definition, so an exemption is correct rather than a loophole. What these keep is the
-   * ONE property that carries the signal — opacity, which does not move anything across
-   * the screen and does not trigger vestibular symptoms. The travelling bar becomes a
-   * pulse in place; the spinner stops rotating and breathes instead.
-   */
-  @media (prefers-reduced-motion: reduce) {
-    .n-spinner,
-    .n-dots i,
-    .n-bar::after,
-    .n-btn[aria-busy='true']::before {
-      animation-duration: 1.4s !important;
-      animation-iteration-count: infinite !important;
-    }
-    .n-spinner, .n-btn[aria-busy='true']::before {
-      animation-name: n-breathe !important;
-      /* Without rotation the single-arc trick stops reading as a ring, so close it. */
-      border-block-start-color: var(--brand-9);
-    }
-    .n-bar::after {
-      animation-name: n-breathe !important;
-      inline-size: 100%;
-      translate: none;
-    }
-    .n-skeleton { animation-name: n-breathe !important; animation-duration: 1.8s !important; }
-  }
-  @keyframes n-breathe { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+  /* The reduced-motion exemption for loaders is NOT here. It lives in nilam.motion, the FIRST
+   * layer, because !important declarations resolve in REVERSE layer order — a rule in this
+   * layer therefore loses to nilam.base's blanket `animation-duration: 0.01ms !important` on *.
+   * It sat here for three releases and every loader froze. See nilam.motion.css. */
 
   /* The accessible wrapper. role="status" has an implicit aria-live="polite", so the text
      inside is announced once without interrupting. The visible loader is decorative next

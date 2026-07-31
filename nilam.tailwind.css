@@ -145,10 +145,31 @@
 
   /* ── charts ─────────────────────────────────────────────────────────────
    *
-   * shadcn expects --chart-1..5. Steps of ONE solved scale rather than five arbitrary
-   * hues: a sequential series wants a lightness ramp, every neighbouring pair is then
-   * guaranteed distinguishable, and every one of them is legible on a card. Five
-   * unrelated hues are the usual choice and they fail both tests. */
+   * Two things here, and the first is a retraction.
+   *
+   * THE PREVIOUS COMMENT CLAIMED these five were "steps of ONE solved scale, so every
+   * neighbouring pair is guaranteed distinguishable". That is false, and measurably so. The
+   * ten pairwise luminance ratios among brand 7-11 run 1.01:1 to 1.49:1 in light; not one
+   * reaches 3:1, and chart-1/chart-2 is 1.01:1 — identical luminance. Under dichromacy the
+   * worst pair separates by 0.019 against a 0.09 floor.
+   *
+   * It is not a bad choice of steps. It is structural: an exhaustive search of every 5-step
+   * subset of 1-12 tops out at 1.49:1, and swapping to the four proven SEMANTIC hues plus a
+   * neutral is no better (0.014 under dichromacy) — those hues were optimised for the pairs
+   * the prover asserts, and status-versus-status under dichromacy is explicitly not one.
+   *
+   * So the honest statement is the opposite of the old one: NILAM CANNOT SUPPLY FIVE
+   * DISTINGUISHABLE SERIES COLOURS. Nothing can, from one hue, for a dichromat. A chart with
+   * more than about two series therefore needs the same treatment status components get — a
+   * channel that is not colour. Direct labels on the marks, a --surface stroke between
+   * adjacent segments, dashes, or patterns. That is not a limitation of this bridge; it is
+   * what "do not rely on colour alone" means when applied to a chart instead of a badge.
+   *
+   * Second: these are emitted as REAL CUSTOM PROPERTIES as well as theme entries. @theme
+   * inline generates utility classes (.fill-chart-1) and no custom property, so `var(--chart-1)`
+   * resolved to nothing — and an unresolvable var() in an SVG presentation attribute falls back
+   * to BLACK. Every pie and bar in a real app painted solid black, silently, because a
+   * charting library takes its colours as props and cannot use a utility class. */
   --color-chart-1: var(--brand-11);
   --color-chart-2: var(--brand-10);
   --color-chart-3: var(--brand-9);
@@ -191,4 +212,19 @@
      the scale ships is a bridge with a hole in it. */
   --color-scrim: var(--scrim);
 
+}
+
+/* The same five as plain custom properties. @theme inline above makes `fill-chart-1` exist;
+ * this makes `var(--chart-1)` exist. Both are needed: a Tailwind class cannot be passed to a
+ * charting library as a prop, and a library that takes a colour string gets `black` from an
+ * unresolvable var(). Read the retraction in the @theme block before using these for more
+ * than two series. */
+@layer nilam.tokens {
+  :root {
+    --chart-1: var(--brand-11);
+    --chart-2: var(--brand-10);
+    --chart-3: var(--brand-9);
+    --chart-4: var(--brand-8);
+    --chart-5: var(--brand-7);
+  }
 }

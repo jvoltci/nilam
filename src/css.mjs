@@ -31,7 +31,19 @@ const FAMILIES = ['neutral', 'brand', 'danger', 'warn', 'ok', 'info'];
 /* Layer order, declared once and up front. Anything the consumer writes UNLAYERED
  * beats all of it — which is the point. A design system that needs !important to
  * override is a design system people fork. */
-export const LAYERS = '@layer nilam.tokens, nilam.base, nilam.components, nilam.utilities;';
+/* nilam.motion is FIRST, and only for the reason below.
+ *
+ * For NORMAL declarations, a later layer wins. For !IMPORTANT declarations the order is
+ * REVERSED, so an earlier layer wins. That reversal is the whole point of the first slot:
+ * nilam.base's reduced-motion rule sets `animation-duration: 0.01ms !important` on *, and the
+ * loaders need to escape it, because a frozen spinner does not read as reduced motion — it
+ * reads as an app that has hung.
+ *
+ * The exemption originally lived in nilam.components, one layer LATER, on the assumption that
+ * later still wins. It does not, for important declarations, so every loader froze and the
+ * comment claiming otherwise was wrong for three releases. Measured, not reasoned: spinner,
+ * bar and skeleton all reported 1e-05s with 1 iteration under reduce. */
+export const LAYERS = '@layer nilam.motion, nilam.tokens, nilam.base, nilam.components, nilam.utilities;';
 
 const pair = (name, light, dark, gamut = 'srgb') =>
   `    --${name}: light-dark(${fmtIn(light, gamut)}, ${fmtIn(dark, gamut)});`;

@@ -1,6 +1,6 @@
 {
   "name": "nilam",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Proven colour. A design system whose palette is solved from contrast requirements and verified under three kinds of colour blindness.",
   "keywords": [
     "design-system",
@@ -50,7 +50,8 @@
     "./dtcg": "./src/dtcg.mjs",
     "./export": "./src/export.mjs",
     "./behaviours": "./src/behaviours/index.mjs",
-    "./widgets.css": "./nilam.widgets.css"
+    "./widgets.css": "./nilam.widgets.css",
+    "./motion.css": "./nilam.motion.css"
   },
   "bin": {
     "nilam": "./src/cli.mjs"
@@ -60,6 +61,7 @@
     "nilam.css",
     "nilam.tokens.css",
     "nilam.scale.css",
+    "nilam.motion.css",
     "nilam.base.css",
     "nilam.components.css",
     "nilam.tailwind.css",

@@ -119,19 +119,19 @@ for (const sheet of readdirSync(ROOT).filter((f) => /^nilam.*\.css$/.test(f))) {
 }
 
 /* The determinism story rests on beating an !important declaration inside
- * @layer nilam.components, and it beats it by injecting into @layer nilam.tokens — which
- * only works while nilam.tokens is declared FIRST. If the layer order is ever rewritten,
+ * nilam.motion, and it beats it by injecting into that SAME layer — which only works while
+ * nilam.motion is declared FIRST. If the layer order is ever rewritten,
  * the loaders start animating again and every loader baseline becomes a coin flip. */
 const bundle = readFileSync(join(ROOT, 'nilam.css'), 'utf8');
 check(
-  /@layer nilam\.tokens,\s*nilam\.base,\s*nilam\.components/.test(bundle),
-  'nilam.css no longer declares nilam.tokens as the FIRST cascade layer. The harness pauses ' +
-    'the loaders with an !important in nilam.tokens, and important declarations invert layer ' +
+  /@layer nilam\.motion,\s*nilam\.tokens,\s*nilam\.base/.test(bundle),
+  'nilam.css no longer declares nilam.motion as the FIRST cascade layer. The harness pauses ' +
+    'the loaders with an !important in nilam.motion, and important declarations invert layer ' +
     'order — reorder the layers and the spinners animate through the screenshot again',
 );
 check(
-  /animation-iteration-count:\s*infinite\s*!important/.test(readFileSync(join(ROOT, 'nilam.components.css'), 'utf8')),
-  'the loader exemption from prefers-reduced-motion is gone from nilam.components.css. That is ' +
+  /animation-iteration-count:\s*infinite\s*!important/.test(readFileSync(join(ROOT, 'nilam.motion.css'), 'utf8')),
+  'the loader exemption from prefers-reduced-motion is gone from nilam.motion.css. That is ' +
     'a deliberate feature — a frozen spinner reads as a hung app — so either it regressed or ' +
     'this harness is now fighting a battle it no longer needs to',
 );

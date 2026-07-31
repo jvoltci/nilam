@@ -31,7 +31,7 @@
  *   <div class="dark">      just that subtree, tokens and all
  */
 
-@layer nilam.tokens, nilam.base, nilam.components, nilam.utilities;
+@layer nilam.motion, nilam.tokens, nilam.base, nilam.components, nilam.utilities;
 
 @layer nilam.tokens {
   :root {

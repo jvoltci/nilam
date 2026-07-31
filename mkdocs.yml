@@ -101,6 +101,20 @@ nav:
   - Honest limits:
       - Limitations: limitations.md
       - Visual regression: visual.md
+  - Learn:
+      - Where to start: learn/index.md
+      - 1 · Why a design system: learn/1-what-is-a-design-system.md
+      - 2 · Why hex is a trap: learn/2-hex-is-a-trap.md
+      - 3 · What 4.5:1 means: learn/3-contrast.md
+      - 4 · Why twelve steps: learn/4-twelve-steps.md
+      - 5 · Dark mode: learn/5-dark-mode.md
+      - 6 · Shadows: learn/6-shadows.md
+      - 7 · Colour blindness: learn/7-colour-blindness.md
+      - 8 · Type and space: learn/8-type-and-space.md
+      - 9 · The cascade: learn/9-the-cascade.md
+      - 10 · The platform: learn/10-the-platform.md
+      - 11 · Tokens beyond CSS: learn/11-tokens-beyond-css.md
+      - 12 · How you know: learn/12-how-you-know.md
 
 extra:
   social:

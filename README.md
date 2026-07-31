@@ -308,9 +308,19 @@ JS state machines and React Aria already does them properly.
 @layer nilam.tokens, nilam.base, nilam.components, nilam.utilities;
 ```
 
-Anything you write **unlayered beats all of it**. No `!important` needed. There is exactly
-one `!important` in the package — `[hidden]` — because without it any author `display`
-silently un-hides a hidden element.
+Anything you write **unlayered beats all of it** — for normal declarations. No `!important`
+needed.
+
+`!important` is the exception, and it works the other way round in two ways worth knowing.
+Important declarations resolve in **reverse** layer order, so an earlier layer wins; and an
+unlayered important declaration is the *weakest* author priority, not the strongest. Both bit
+this package: the reduced-motion loader exemption sat in `nilam.components`, one layer after
+`nilam.base`, and lost to it for three releases while its own comment described the opposite.
+It now lives in `nilam.motion`, declared first, which is the only reason that file exists.
+
+The package contains three `!important` declarations: `[hidden]`, because without it any
+author `display` silently un-hides a hidden element, and two in `nilam.motion` keeping loaders
+alive under `prefers-reduced-motion`.
 
 ---
 

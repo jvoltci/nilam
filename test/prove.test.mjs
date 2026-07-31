@@ -329,7 +329,7 @@ if (existsSync(join(root, 'nilam.css'))) {
     'the bundle or the tokens file lost its light-dark() values',
   );
   // Layer order must be declared exactly once in the bundle, or the cascade is undefined.
-  const layerDecls = [...bundle.matchAll(/@layer nilam\.tokens, nilam\.base/g)].length;
+  const layerDecls = [...bundle.matchAll(/@layer nilam\.motion, nilam\.tokens/g)].length;
   check(layerDecls === 1, `the bundle declares the layer order ${layerDecls} times, expected exactly 1`);
 }
 
@@ -379,6 +379,57 @@ for (const status of ['ok', 'warn', 'danger', 'info']) {
     rmSync(out, { force: true });
   } catch (err) {
     fails.push(`the CLI failed to run: ${err.message}`);
+  }
+}
+
+/* ── 7. the loader exemption is in a layer that can actually win ──────────
+ *
+ * !important declarations resolve in REVERSE cascade-layer order. So the reduced-motion
+ * exemption that keeps loaders alive has to sit in a layer declared BEFORE nilam.base, whose
+ * blanket rule is `animation-duration: 0.01ms !important` on *. It sat in nilam.components —
+ * one layer AFTER base — for three releases, lost every contest, and froze every loader,
+ * while the comment beside it stated the opposite. Found by an app, not by this file.
+ *
+ * A frozen spinner is not reduced motion. It reads as an app that has hung.
+ *
+ * This asserts the mechanism rather than the rendering: that the exemption lives in
+ * nilam.motion, that nilam.motion is declared first, and that every animated loader is
+ * covered by BOTH duration and iteration-count. The second was its own hidden bug — the
+ * skeleton was absent from the iteration-count selector, so it breathed exactly once and
+ * settled, which for a skeleton is worse than not animating at all. */
+{
+  const motion = readFileSync(join(root, 'nilam.motion.css'), 'utf8');
+  const components = readFileSync(join(root, 'nilam.components.css'), 'utf8');
+  const bundle = readFileSync(join(root, 'nilam.css'), 'utf8');
+
+  const order = /@layer ([^;]+);/.exec(bundle)?.[1].split(',').map((x) => x.trim()) ?? [];
+  check(order[0] === 'nilam.motion',
+    `nilam.motion is at position ${order.indexOf('nilam.motion')} in the layer order, not first — ` +
+      `its !important rules will lose to nilam.base and every loader will freeze under prefers-reduced-motion`);
+  check(order.indexOf('nilam.motion') < order.indexOf('nilam.base'),
+    'nilam.motion is declared after nilam.base, so it cannot win an !important contest against it');
+
+  check(/@layer nilam\.motion\s*\{/.test(motion), 'nilam.motion.css does not open @layer nilam.motion');
+  check(!/prefers-reduced-motion/.test(components),
+    'the reduced-motion exemption is back in nilam.components, where it loses to nilam.base');
+
+  // Every animated loader needs BOTH properties overridden, or base pins one of them.
+  /* Comments stripped FIRST. The header comment quotes nilam.base's blanket rule verbatim,
+   * including a `@media (prefers-reduced-motion: reduce) { * { … } }`, so the naive regex
+   * matched the prose and parsed a sentence as a rule block. */
+  const code = motion.replace(/\/\*[\s\S]*?\*\//g, '');
+  /* And strip the @media's own opening brace, or the first [^{}]+ match is the whitespace
+   * before it and every selector gets paired with the PREVIOUS rule's declarations — an
+   * off-by-one that reported three real, correct rules as missing. */
+  const reduce = (/@media \(prefers-reduced-motion: reduce\)([\s\S]*)$/.exec(code)?.[1] ?? '')
+    .replace(/^\s*\{/, '');
+  for (const sel of ['.n-spinner', '.n-skeleton', '.n-bar::after', '.n-dots i']) {
+    const blocks = [...reduce.matchAll(/([^{}]+)\{([^}]*)\}/g)]
+      .filter((m) => m[1].includes(sel)).map((m) => m[2]).join(' ');
+    check(/animation-duration:[^;]*!important/.test(blocks),
+      `${sel} has no !important animation-duration under reduce — nilam.base pins it to 0.01ms and it freezes`);
+    check(/animation-iteration-count:\s*infinite\s*!important/.test(blocks),
+      `${sel} has no !important animation-iteration-count under reduce — nilam.base pins it to 1, so it runs once and settles`);
   }
 }
 

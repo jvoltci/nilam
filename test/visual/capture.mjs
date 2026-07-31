@@ -31,12 +31,18 @@
  *
  *    Two mechanisms instead, and both are needed:
  *
- *      a. `animation-play-state: paused !important` injected into @layer nilam.tokens.
+ *      a. `animation-play-state: paused !important` injected into @layer nilam.motion.
  *         The layer name matters. For IMPORTANT declarations the cascade reverses layer
  *         order, so an `!important` in the FIRST layer beats an `!important` in a later
- *         one — nilam.tokens outranks nilam.components. Injecting this unlayered would
+ *         one — nilam.motion outranks every later layer. Injecting this unlayered would
  *         lose to the loader exemption. Re-opening an existing layer name appends to that
- *         layer in its original position, so this genuinely lands in nilam.tokens.
+ *         layer in its original position, so this genuinely lands in nilam.motion.
+ *
+ *         It targeted nilam.tokens until 0.4.1, when the loader exemption moved OUT of
+ *         nilam.components into a new nilam.motion declared ahead of everything — because
+ *         in nilam.components it had been losing to nilam.base for three releases and every
+ *         loader was frozen. The harness's own assertion caught that this pause had been
+ *         demoted below the thing it exists to override.
  *
  *      b. Web Animations API: `getAnimations()`, then `pause()` and a fixed `currentTime`
  *         on every animation including the ones on ::before pseudo-elements. This is
@@ -122,9 +128,9 @@ export function findChrome() {
  * See note 1 and 2 at the top of this file for why each half is where it is. */
 const FREEZE_CSS = `<style id="n-visual-freeze">
 /* Injected by test/visual/capture.mjs. IMPORTANT declarations invert layer order, so
-   re-opening nilam.tokens — the FIRST layer — outranks the loader exemption that
+   re-opening nilam.motion — the FIRST layer — outranks the loader exemption that
    nilam.components declares with !important. Unlayered would lose. */
-@layer nilam.tokens {
+@layer nilam.motion {
   *, *::before, *::after, ::backdrop, ::marker {
     animation-play-state: paused !important;
   }

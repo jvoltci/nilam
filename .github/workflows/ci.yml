@@ -1,7 +1,7 @@
 # nilam — CI.
 #
 # The package's whole claim is that it proves itself. A proof that only runs when someone
-# remembers to type `npm test` is not a proof, it is a habit — so this runs the three
+# remembers to type `npm test` is not a proof, it is a habit — so this runs all four
 # suites on every push and every pull request, and the branch is protectable on it.
 #
 # It also does the two things a local run cannot:
@@ -68,6 +68,13 @@ jobs:
 
       - name: prove the keyboard contracts
         run: node test/behaviours.test.mjs
+
+      # Named here deliberately, because this job lists its suites one by one instead of
+      # running `npm test`. Added to package.json first, where it was green — and it would
+      # never have run in CI, which is the same shape as the nine defects it exists to catch:
+      # something that looked covered and was not.
+      - name: prove the shipped CSS against the palette
+        run: node test/surfaces.test.mjs
 
   generated-files-are-current:
     name: generated files are current

@@ -182,9 +182,94 @@
   --color-chart-4: var(--brand-8);
   --color-chart-5: var(--brand-7);
 
-  /* ── type, space, radius, motion, elevation ─────────────────────────── */
+  /* ── type, space, radius, motion, elevation ─────────────────────────────
+   *
+   * This block used to stop at font-family, and that was a real hole: a Tailwind app got
+   * nilam's colours and Tailwind's default type scale, so it ran TWO scales at once — nilam's
+   * inside .n-* components and Tailwind's on every bare element. `text-display` and
+   * `font-thin` did not exist as classes at all, so the one treatment nilam's own scale
+   * recommends was unreachable from the utility layer. An app reported it after having to run
+   * both side by side.
+   *
+   * The reason it looked impossible: nilam names its sizes --text-1 and Tailwind's font-size
+   * namespace is also --text-*, so `--text-1: var(--text-1)` reads as circular.
+   *
+   * It is not, because of `inline`. @theme inline does NOT emit a theme variable — it inlines
+   * the value at the use site — so the var() resolves against nilam.scale.css rather than
+   * against this entry. The same pattern was already working for --font-sans and --ease-out
+   * two lines below; the fear was never tested. */
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
+
+  /* Sizes, named as nilam names them, so `text-1` is the body step and `text-display` exists.
+   * Deliberately NOT remapped onto Tailwind's xs/sm/base/lg names: two vocabularies for one
+   * scale is how a team ends up unsure which is authoritative. */
+  --text-000: var(--text-000);
+  --text-00: var(--text-00);
+  --text-0: var(--text-0);
+  --text-1: var(--text-1);
+  --text-2: var(--text-2);
+  --text-3: var(--text-3);
+  --text-4: var(--text-4);
+  --text-5: var(--text-5);
+  --text-6: var(--text-6);
+  --text-7: var(--text-7);
+  --text-display: var(--text-display);
+
+  /* Weights. thin is 200 and exists for one purpose — --text-display at --weight-thin is the
+   * pairing the scale recommends, and `font-thin` is how you reach it from a utility. */
+  --font-weight-thin: var(--weight-thin);
+  --font-weight-light: var(--weight-light);
+  --font-weight-normal: var(--weight-normal);
+  --font-weight-medium: var(--weight-medium);
+  --font-weight-semibold: var(--weight-semibold);
+  --font-weight-bold: var(--weight-bold);
+
+  /* Leading and tracking, which move in opposite directions as size changes: line height falls
+   * as type grows, tracking rises as type shrinks. Both are in the scale and neither was
+   * reachable, so a Tailwind app had nilam's sizes with Tailwind's leading on top. */
+  --leading-tight: var(--leading-tight);
+  --leading-snug: var(--leading-snug);
+  --leading-normal: var(--leading-normal);
+  --leading-loose: var(--leading-loose);
+
+  --tracking-tight: var(--tracking-tight);
+  --tracking-normal: var(--tracking-normal);
+  --tracking-wide: var(--tracking-wide);
+  --tracking-micro: var(--tracking-micro);
+
+  /* SPACING IS DELIBERATELY NOT MAPPED, and this is the one place the bridge refuses.
+   *
+   * It works — `--spacing-5: var(--space-5)` does generate `.p-5{padding:var(--space-5)}`. It
+   * was mapped, measured, and taken back out.
+   *
+   * Tailwind already defines those names, and it defines them DIFFERENTLY above step 4:
+   *
+   *          Tailwind   nilam
+   *   1-4    identical  identical
+   *   5      1.25rem    1.5rem
+   *   6      1.5rem     2rem
+   *   7      1.75rem    3rem
+   *   8      2rem       4rem
+   *
+   * They agree up to 4 because both are a 4px grid. Above it nilam doubles on purpose — past
+   * 1rem nobody can tell 20px from 24px, so offering both only invites inconsistency — while
+   * Tailwind keeps stepping linearly.
+   *
+   * So mapping them means every existing p-5 through p-9 in the consuming app silently changes
+   * size on the day nilam is installed. Measured in one real app: 222 usages, 131 of them p-6
+   * alone. That is not a design system adopting an app, it is a stylesheet reaching in and
+   * moving furniture.
+   *
+   * Type, weights, leading and tracking above are safe to map precisely because Tailwind had
+   * nothing at those names — nothing changes meaning, the classes simply start existing. That is
+   * the test for whether a mapping belongs here.
+   *
+   * Use --space-* directly for nilam's steps (`p-[var(--space-5)]`, or a component class), and
+   * leave p-1 through p-4 alone: they already ARE nilam's grid. */
+
+  /* The measure, so max-w-measure is the 65ch that prose stops being tiring at. */
+  --container-measure: var(--measure);
 
   --radius-xs: var(--r-1);
   --radius-sm: var(--r-2);

@@ -52,17 +52,25 @@ worth three lines whenever you feel like it:
 
 ## Open — closeable
 
-### 1. The Tailwind bridge omits everything that is not a colour
+### ~~1. The Tailwind bridge omits everything that is not a colour~~ — closed in 0.5.0
 
-Priority: **highest of the open items.** Found by aire.
+Sizes, weights, leading, tracking and the measure are all mapped now, so `text-display`,
+`font-thin`, `tracking-micro`, `leading-tight`, `max-w-measure` and `text-000` exist as
+utilities. Verified generating in a real build.
 
-The bridge maps colour, radius, shadow, easing and font-family. It does **not** map the type
-scale, weights, spacing, leading or tracking. So in a Tailwind app `text-display` and
-`font-thin` do not exist as classes, and the app runs two type scales at once: nilam's inside
-`.n-*` components, Tailwind's on everything else.
+The apparent blocker was imaginary: nilam names its sizes `--text-1` and Tailwind's font-size
+namespace is also `--text-*`, so the mapping reads as circular. `@theme inline` does not emit a
+theme variable — it inlines the value at the use site — so the `var()` resolves against
+`nilam.scale.css`. The same pattern had been working for `--font-sans` all along; the fear was
+never tested.
 
-This is the difference between "nilam styles your components" and "nilam is your design
-system" in a Tailwind app. Bounded, mechanical work.
+**Spacing is deliberately still not mapped.** It works, was mapped, measured, and taken back
+out: Tailwind already defines `p-5` through `p-9` and defines them differently above step 4
+(nilam doubles on purpose, Tailwind steps linearly). Mapping them silently resizes every
+existing usage — **222 of them in one real app, 131 being `p-6` alone.** Steps 1–4 already agree,
+because both are a 4px grid. The test for whether a mapping belongs in the bridge is whether
+Tailwind had anything at that name: if it did, changing its meaning is not adoption, it is
+reaching in and moving furniture.
 
 ### 2. Per-app items, honestly flagged rather than hidden
 

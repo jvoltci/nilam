@@ -226,13 +226,31 @@ the most common contrast defect in comparable systems.
 @import 'tailwindcss/utilities.css' layer(utilities);
 ```
 
-**Both lines about `motion.css` matter.** It carries the rule that keeps loaders animating under
-`prefers-reduced-motion`, using `!important` to escape the blanket freeze in `nilam.base`. Because
-important declarations resolve in **reverse** layer order, that only works from an *earlier* layer —
-so importing it is not enough. A layer is created where it is first *named*, and if that happens
-during the import it lands after `nilam.utilities` and loses again. Naming the order up front fixes
-it. Omit either line and every spinner, bar and skeleton freezes, which reads as a hung app rather
-than as reduced motion.
+**Both lines about `motion.css` matter, and if you already have an `@layer` statement,
+`nilam.motion` must go in *that* one.**
+
+It carries the rule that keeps loaders animating under `prefers-reduced-motion`, using
+`!important` to escape the blanket freeze in `nilam.base`. Important declarations resolve in
+**reverse** layer order, so that only wins from an *earlier* layer.
+
+Two things follow, and the second is easy to get wrong:
+
+- **Importing is not enough.** A layer is created where it is first *named*. Leave it to the
+  `@import` and it is created after `nilam.utilities`, and loses again.
+- **A second `@layer` statement cannot fix it.** A layer's position is fixed by the *first*
+  statement that names it; a later statement can only **append**. So if your file already
+  declares an order — as any granular Tailwind setup does — adding
+  `@layer nilam.motion, …` further down does nothing. Measured in a real app: it placed
+  `nilam.motion` after `nilam.components` and the loaders stayed frozen. It has to go into the
+  existing statement:
+
+```css
+@layer theme, base, nilam.motion, nilam.tokens, nilam.base, nilam.components,
+       nilam.utilities, components, utilities;
+```
+
+Get it wrong and every spinner, bar and skeleton freezes — which reads as a hung app, not as
+reduced motion.
 
 Also add this, until you are on a nilam that ships it:
 

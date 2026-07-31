@@ -177,6 +177,20 @@ well as a lightness step, and separates on two channels instead of one.
   </div>
 </div>
 
+There is a trap inside that, and nilam shipped it. **In dark mode `--surface` and `--neutral-3`
+have identical lightness** — 0.2455 both, differing only by the 0.007 of chroma, which is
+1.0009:1. That is deliberate: the dark card is the untinted version of the component surface.
+
+Good for cards. Fatal for anything drawn *on* a card out of step 3. The skeleton loader was
+built from steps 3 and 4, so on a dark card it was **completely invisible** — the component
+whose entire job is to say "content is coming" said nothing on the surface it sits on most
+often, and it was true in the project's own showcase for several releases. It is now built from
+steps 5 and 7, which measure 1.18:1 against a dark card.
+
+The general form of that is worth keeping: a solved ramp tells you what each step is for
+*relative to the page*. It does not tell you which pairs of steps happen to coincide in one
+mode.
+
 ## Two more recorded mistakes, because they teach the rule
 
 **Steps 2 to 5 are solved as contrast, not as fixed lightness deltas.** A fixed delta is a

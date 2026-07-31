@@ -207,6 +207,19 @@ is one to two orders of magnitude of margin.
 the bug for ever, and every run afterwards agrees with it. Only a human opening the PNG prevents
 that, which is why the procedure says *look at every re-blessed image* and means it.
 
+That is not a hypothetical either, and the demonstration is in this repository's own history.
+There is a capture named `loaders-reduced-motion`, and its stated purpose is to assert the one
+thing no number can: that loaders **keep moving** when the operating system asks for reduced
+motion, because a frozen spinner reads as a hung application.
+
+The exemption that keeps them moving had been in the wrong cascade layer since it was written —
+chapter 9 has the mechanism — so the loaders were frozen. The capture ran. It compared the frozen
+loaders against a baseline of frozen loaders, found zero pixels of difference, and passed. It did
+that for three releases.
+
+Every assertion was green. The picture was right there. **The suite can only tell you that
+something changed; it cannot tell you the thing it is looking at is wrong.**
+
 **Meaning, still.** The suite catches that `warn` *changed*. It cannot tell you the new colour
 reads as a fashion brand. Somebody has to look.
 
@@ -216,7 +229,7 @@ Four suites, and they cover different things:
 
 | Suite | Assertions | What it checks |
 |---|---|---|
-| `prove.test.mjs` | 1,277 | the solver's contracts, and the emitted CSS parsed back out of the file and re-measured |
+| `prove.test.mjs` | 1,294 | the solver's contracts, and the emitted CSS parsed back out of the file and re-measured |
 | `dtcg.test.mjs` | 5,955 | the token export, both directions against the stylesheet |
 | `behaviours.test.mjs` | 198 | the ARIA APG keyboard contracts |
 | `visual.test.mjs` | 31 images | the rendered pixels, in both modes |
@@ -255,8 +268,9 @@ And the claim, one more time, stated as narrowly as it should be:
 
 1. Every lightness in the palette is found by inverting a contrast requirement, so a step cannot
    exist at a value that breaks its own contract.
-2. The dichromat-separation assertion is machine-checked and gates the build, and no prior art
-   for that was found in a design system.
+2. The dichromat separation is machine-checked, and the report it produces gates the build
+   unless the collapsing components carry a non-hue channel. No prior art for that was found
+   in a design system.
 
 **Nothing on this site is a claim that using nilam makes an interface accessible.** That depends
 on the interface. The keyboard layer has not been tested against a screen reader. The contrast

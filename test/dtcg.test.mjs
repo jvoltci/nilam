@@ -95,6 +95,20 @@ for (const mode of MODES) {
 
 const solverColour = (mode, path) => {
   if (path[1] === 'surface') return palette[mode].neutral.surface;
+
+  /* ink-max and void are RESTATED here rather than imported, and the duplication is the point.
+   * This block is a round-trip check: it asks whether the emitted bytes match an independent
+   * statement of what they should be. Importing the same constant css.mjs uses would make both
+   * sides wrong together and the assertion would pass regardless — which is the failure mode
+   * this whole suite exists to catch elsewhere. If these ever disagree with css.mjs, one of
+   * the two is wrong and the test is doing its job. */
+  const h = palette[mode].neutral[1].h;
+  if (path[1] === 'ink-max') {
+    return mode === 'light' ? { L: 0.16, C: 0, h } : { L: 1, C: 0, h };
+  }
+  if (path[1] === 'void') {
+    return mode === 'light' ? { L: 0.90, C: 0.007, h } : { L: 0.10, C: 0.007, h };
+  }
   const scale = palette[mode][path[1]];
   return path[2] === 'ink' ? inkFor(scale[9]) : scale[Number(path[2])];
 };

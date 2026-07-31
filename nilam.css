@@ -59,6 +59,8 @@
     --neutral-12: light-dark(oklch(0.4191 0.0070 285.0), oklch(0.7430 0.0070 285.0));
     --neutral-ink: light-dark(oklch(1.0000 0.0000 285.0), oklch(0.1600 0.0000 285.0));
     --surface: light-dark(oklch(1.0000 0.0000 285.0), oklch(0.2455 0.0000 285.0));
+    --ink-max: light-dark(oklch(0.1600 0.0000 285.0), oklch(1.0000 0.0000 285.0));
+    --void: light-dark(oklch(0.9000 0.0070 285.0), oklch(0.1000 0.0070 285.0));
 
     /* brand */
     --brand-1: light-dark(oklch(0.9800 0.0010 285.0), oklch(0.1750 0.0103 285.0));
@@ -161,6 +163,8 @@
     --neutral-12: light-dark(color(display-p3 0.29889 0.29921 0.31449), color(display-p3 0.67061 0.67101 0.68865));
     --neutral-ink: light-dark(color(display-p3 1 1 1), color(display-p3 0.05176 0.05176 0.05176));
     --surface: light-dark(color(display-p3 1 1 1), color(display-p3 0.1273 0.1273 0.1273));
+    --ink-max: light-dark(color(display-p3 0.05176 0.05176 0.05176), color(display-p3 1 1 1));
+    --void: light-dark(color(display-p3 0.86758 0.86802 0.88652), color(display-p3 0.01228 0.01229 0.01842));
 
     /* brand */
     --brand-1: light-dark(color(display-p3 0.97334 0.97341 0.97634), color(display-p3 0.06226 0.06235 0.08082));
@@ -1215,6 +1219,13 @@
   /* ── dialog: native, no focus-trap library ──────────────────────────────── */
 
   .n-dialog {
+    /* margin: auto is what centres a modal <dialog>, and it comes from the UA sheet rather
+     * than from anything here — so any reset that zeroes margins silently pins the modal to
+     * the top-left corner. Tailwind's preflight does exactly that: `margin: 0` on
+     * `*, ::after, ::before, ::backdrop`. Setting padding without restoring margin meant every
+     * Tailwind v4 consumer of nilam got a top-left dialog, and it was found by looking at a
+     * screenshot rather than by reading either stylesheet, because neither is wrong alone. */
+    margin: auto;
     padding: 0;
     border: var(--line-1) solid var(--neutral-6);
     border-radius: var(--r-6);

@@ -576,6 +576,13 @@
   /* ── dialog: native, no focus-trap library ──────────────────────────────── */
 
   .n-dialog {
+    /* margin: auto is what centres a modal <dialog>, and it comes from the UA sheet rather
+     * than from anything here — so any reset that zeroes margins silently pins the modal to
+     * the top-left corner. Tailwind's preflight does exactly that: `margin: 0` on
+     * `*, ::after, ::before, ::backdrop`. Setting padding without restoring margin meant every
+     * Tailwind v4 consumer of nilam got a top-left dialog, and it was found by looking at a
+     * screenshot rather than by reading either stylesheet, because neither is wrong alone. */
+    margin: auto;
     padding: 0;
     border: var(--line-1) solid var(--neutral-6);
     border-radius: var(--r-6);

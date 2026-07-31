@@ -176,8 +176,15 @@ width of the card with gaps in the middle of the sentence.
 The fix is `display: block` with the chevron absolutely positioned, because block layout keeps
 inline content as prose, which is what it is.
 
-The platform gives you the behaviour. It does not give you the layout, and the layout still has
-edge cases.
+And then it happened again in the same file. `.n-error` — the little `⚠` plus a message under a
+form field — was also flex with a gap, so any `<code>` or `<a>` mid-sentence opened the same hole
+either side of itself. **The comment on `.n-summary` warns about exactly this trap, and the
+component one screenful away was still falling into it.** It is now block layout with the glyph
+as an inline `::before` and a margin.
+
+The platform gives you the behaviour. It does not give you the layout, the layout still has edge
+cases, and writing the lesson down next to one component does not automatically apply it to the
+next.
 
 ## `:has()` and `field-sizing`
 
@@ -203,6 +210,14 @@ the two in step.
 And `:user-invalid` deserves a note of its own. `:invalid` matches an empty required field
 *before it has been touched*, so validation styling with it paints a form red the moment it
 loads, which is hostile. `:user-invalid` waits until the user has finished with the field.
+
+But it is not the whole answer, and nilam had to learn that too. **`:user-invalid` only fires
+for constraints the *browser* evaluates** — `required`, `type`, `pattern`. An application-level
+rule ("that is not a valid magnet URI", "this username is taken") has no browser constraint to
+violate, so on a plain valid text field `:user-invalid` never matches, and the border stayed
+neutral while the error text below it said otherwise. The fix is to style `[aria-invalid="true"]`
+alongside it — and since that is the attribute assistive technology reads anyway, it means the
+visible state and the announced state cannot disagree.
 
 <div class="nd-demo">
   <p class="nd-label">type a bad address and tab away · type in the textarea · the third row is disabled</p>

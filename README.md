@@ -213,13 +213,35 @@ the most common contrast defect in comparable systems.
 ### Tailwind v4 and shadcn/ui
 
 ```css
+/* nilam.motion must be NAMED FIRST, before anything else is imported. */
+@layer nilam.motion, nilam.tokens, nilam.base, nilam.components, nilam.utilities;
+
 @import 'tailwindcss/theme.css' layer(theme);
 @import 'tailwindcss/preflight.css' layer(base);
+@import 'nilam/motion.css';
 @import 'nilam/tokens.css';
 @import 'nilam/base.css';
 @import 'nilam/tailwind.css';
 @import 'nilam/components.css';
 @import 'tailwindcss/utilities.css' layer(utilities);
+```
+
+**Both lines about `motion.css` matter.** It carries the rule that keeps loaders animating under
+`prefers-reduced-motion`, using `!important` to escape the blanket freeze in `nilam.base`. Because
+important declarations resolve in **reverse** layer order, that only works from an *earlier* layer —
+so importing it is not enough. A layer is created where it is first *named*, and if that happens
+during the import it lands after `nilam.utilities` and loses again. Naming the order up front fixes
+it. Omit either line and every spinner, bar and skeleton freezes, which reads as a hung app rather
+than as reduced motion.
+
+Also add this, until you are on a nilam that ships it:
+
+```css
+@layer components {
+  /* Tailwind's preflight sets `margin: 0` on *, ::after, ::before and ::backdrop, which kills
+     the UA's `margin: auto` on <dialog> — so a modal pins to the top-left corner. */
+  .n-dialog { margin: auto; }
+}
 ```
 
 Granular Tailwind imports, not the single `@import 'tailwindcss'`, because sub-layers

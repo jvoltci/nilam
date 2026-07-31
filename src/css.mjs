@@ -65,7 +65,39 @@ const family = (palette, name, gamut = 'srgb') => {
   /* The card, and the only surface carrying no tint at all. In light mode the page is
    * tinted and the card is pure white: the tint reads as LIGHT precisely because the
    * thing beside it has none. The eye is comparing, not measuring. */
-  const surface = name === 'neutral' ? `\n${pair('surface', l.surface, d.surface, gamut)}` : '';
+  let surface = name === 'neutral' ? `\n${pair('surface', l.surface, d.surface, gamut)}` : '';
+
+  /* Two values the twelve steps cannot express, emitted here rather than hand-written into
+   * nilam.scale.css — where they were first put, wrongly. They are colours, and every colour
+   * in this system is solved, so writing them by hand meant they would not follow the hue: run
+   * `npx nilam 22` and the whole palette moves while two literals sit at 285.
+   *
+   * --ink-max is MAXIMUM ink, not step 12. Step 12's contract is 7:1, which at this hue lands
+   * on L 0.419 in light — a dark slate, 8.51:1 on white. Right for text, wrong for anything
+   * that wants every bit of contrast going: a QR code, a barcode, a data matrix. A real app
+   * measured 8.51:1 where a conventional QR gets 21:1, then borrowed --ok-ink, which is a
+   * semantic lie about a foreground that has nothing to do with success.
+   *
+   * --void is BELOW the page, which no step is: the dark ramp starts at --neutral-1 and only
+   * lightens. Nothing existed for a video matte, an image-viewer letterbox or an editor gutter
+   * — surfaces that must read as absence rather than as one more panel. It keeps the 0.007 cast
+   * so it belongs to the same family.
+   *
+   * The dark value is 0.10 and NOT the 0.09 first chosen, because 0.09 does not survive an
+   * 8-bit round trip: it quantises to #020204, which decodes 0.00414 away in OKLab — a colour
+   * the prover never measured. Caught by the DTCG hex-fallback assertion.
+   *
+   * And the error is not monotonic in lightness, which is the part worth knowing. 0.07 round
+   * trips cleanly, 0.08 and 0.09 do not, 0.10 and 0.11 do, 0.12 does not, 0.13 does. That is
+   * the 8-bit lattice showing through: Y = L^3, so at L 0.09 the luminance is 0.0007 and the
+   * whole neighbourhood is served by two or three integers. Whether a given lightness lands
+   * near one of them is an accident. Below about L 0.15, a value has to be CHECKED rather than
+   * chosen — which is the same lesson as everything else here, one octave lower. */
+  if (name === 'neutral') {
+    const h = l[1].h;
+    surface += `\n${pair('ink-max', { L: 0.16, C: 0, h }, { L: 1, C: 0, h }, gamut)}`;
+    surface += `\n${pair('void', { L: 0.90, C: 0.007, h }, { L: 0.10, C: 0.007, h }, gamut)}`;
+  }
 
   return `    /* ${name} */\n${steps}\n${ink}${surface}`;
 };

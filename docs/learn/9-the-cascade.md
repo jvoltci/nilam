@@ -142,17 +142,56 @@ specificity of **0,1,0** — lower than the rule it is beating:
 
 This is the part that catches people, and it is logical once you see why.
 
-For `!important` declarations, **layer order runs backwards**. An `!important` in the *first*
-layer beats an `!important` in a later one. And an `!important` in any layer beats **unlayered**
-author CSS.
+Two things run the other way for `!important`, and they are the opposite of what almost
+everybody assumes.
 
-The reason is consistency: `!important` exists to let a lower-priority origin overrule a
-higher-priority one — that is why a user stylesheet's `!important` beats an author's. Layers
-inherit the same inversion so the mechanism behaves the same way at every level.
+**Layer order runs backwards.** An `!important` in the *first* layer beats an `!important` in a
+later one.
 
-Two consequences, both of which nilam has actually run into.
+**An unlayered `!important` is the weakest author priority, not the strongest.** It loses to an
+`!important` in any named layer.
 
-### The one `!important` in the package
+The reason both hold is consistency: `!important` exists to let a lower-priority origin overrule
+a higher-priority one — that is why a user stylesheet's `!important` beats an author's. Layers
+inherit the same inversion, so the mechanism behaves the same way at every level.
+
+Three consequences, all of which nilam has actually run into. One of them shipped broken for
+three releases.
+
+### The `!important` that lost for three releases
+
+`nilam.base.css` carries the usual blanket reduced-motion rule:
+
+```css
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.01ms !important }
+}
+```
+
+Right for decoration, wrong for a loader — a frozen spinner does not read as "motion reduced",
+it reads as "this app has hung", and the reader loses the only signal that anything is still
+happening. So there is an exemption that keeps the loaders moving on `opacity` alone.
+
+The exemption was written in `nilam.components.css`, **one layer after `nilam.base`**, on the
+entirely reasonable assumption that a later layer wins.
+
+It does not, for `!important`. Base beat it. **Every loader froze, in every release from 0.2.0
+to 0.4.0** — and the comment sitting beside the exemption confidently described the opposite.
+Measured on a built page, the spinner, the bar and the skeleton all reported
+`n-breathe 1e-05s 1 iteration`.
+
+The fix is a file: `nilam.motion.css`, declared **first**. That is the only reason it exists as a
+separate stylesheet — its layer position is its entire purpose.
+
+And there was a second bug hiding inside the first. The skeleton was not in the exemption's
+selector list, so it inherited base's `animation-iteration-count: 1 !important` and breathed
+exactly **once** before stopping. Which for a skeleton is worse than not animating at all,
+because the reader watches it settle and concludes the content has arrived.
+
+The package therefore contains **three** `!important` declarations, not one: `[hidden]`, and two
+in `nilam.motion` keeping loaders alive.
+
+### `[hidden]`, and what it costs
 
 ```css
 /* nilam.base.css */
@@ -162,7 +201,7 @@ Two consequences, both of which nilam has actually run into.
 It is there because without it, an author writing `.flex { display: flex }` on an element that
 also has the `hidden` attribute **silently un-hides it**. `[hidden]`'s UA default is
 `display: none`, and any author `display` beats a UA default. This was measured in a real
-application, and it is the only `!important` in the package.
+application.
 
 It also has a cost, and this site pays it. mkdocs-material ships its own light/dark toggle as
 a `hidden` label that it un-hides with CSS:
@@ -179,21 +218,28 @@ cannot quietly become an oversight.
 
 ### The trick in the screenshot harness
 
-nilam's visual-regression suite has to freeze five infinite animations to take a deterministic
-screenshot. `nilam.components.css` deliberately *exempts* the loaders from the reduced-motion
-rule with `animation-iteration-count: infinite !important`, because a frozen spinner reads as a
-hung application rather than as reduced motion.
-
-So the harness injects:
+The same rule, used on purpose this time. nilam's visual-regression suite has to freeze five
+infinite animations to take a deterministic screenshot, and it has to beat the loader exemption
+described above. So the harness injects:
 
 ```css
-@layer nilam.tokens {                          /* the FIRST layer */
+@layer nilam.motion {                          /* the FIRST layer */
   * { animation-play-state: paused !important }
 }
 ```
 
 The layer name is the whole trick. For `!important` declarations the order reverses, so an
-`!important` in `nilam.tokens` beats one in `nilam.components`. **Unlayered would have lost.**
+`!important` in the first layer beats one in a later layer. **Unlayered would have lost.**
+
+Two details that make it work. Re-opening an existing layer name **appends to that layer in its
+original position**, so this genuinely lands in `nilam.motion` rather than creating a new last
+layer. And the harness targeted `nilam.tokens` until 0.4.1 — it had to move when the loader
+exemption did, which is a fair illustration of how much of this depends on knowing the layer
+order rather than on the selectors.
+
+Which is the point worth taking away: the same rule that caused a three-release bug is what
+makes the screenshot harness work. It is not a trap, it is a mechanism — the trap is not
+knowing it is there.
 
 ## `revert-layer`, and the collision that found it
 
@@ -237,17 +283,21 @@ it, and stepping out is usually the answer that stays correct.
 One line, and it is the first line of `nilam.tokens.css`:
 
 ```css
-@layer nilam.tokens, nilam.base, nilam.components, nilam.utilities;
+@layer nilam.motion, nilam.tokens, nilam.base,
+       nilam.components, nilam.utilities;
 ```
 
 Declaring the order up front is what fixes it for every file loaded afterwards, which is why the
 import order in your own stylesheet matters — loading `components.css` first would create
 `nilam.components` earlier than `nilam.tokens` and invert the cascade.
 
-Everything nilam ships is inside one of those four layers. **Anything you write unlayered beats
-all of it.** No `!important` needed, no `:where()` gymnastics, no `#id` escalation. And exactly
-one `!important` in the whole package, for `[hidden]`, with its cost documented rather than
-hidden.
+`nilam.motion` is first for one reason and one reason only: it holds `!important` declarations
+that have to outrank `nilam.base`'s, and for `!important` the earliest layer wins.
+
+Everything nilam ships is inside one of those five layers. **Anything you write unlayered beats
+all of it** — for normal declarations. No `!important` needed, no `:where()` gymnastics, no `#id`
+escalation. And three `!important` declarations in the whole package, each with its cost written
+down rather than hidden.
 
 The same property is what makes the Tailwind bridge work at all. Tailwind v4 puts its own output
 in layers, and nilam has to sit **between** `base` and `utilities`:

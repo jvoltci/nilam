@@ -214,10 +214,10 @@ cannot carry "this is the cursor" on its own.
 ## The finding nobody was looking for
 
 Here is what happens when you choose semantic hues by search instead of by taste, and then
-sweep the brand hue across all 360 degrees.
+sweep the brand hue across all 360 degrees against a red/amber/green status set.
 
-**Only roughly 285–315 clears the separation floor** against a red/amber/green status set.
-Every blue fails.
+**Only roughly 285–315 clears the 0.09 floor under every vision.** Every blue collapses with
+`ok` for a tritanope.
 
 The reason is structural, not a threshold artefact:
 
@@ -226,16 +226,53 @@ The reason is structural, not a threshold artefact:
 > above keeps a red component, so under the same simulation it moves toward pink and stays
 > clear of green.
 
-So: **if your statuses are red, amber and green, your brand hue cannot be blue** — not for a
-tritanope. Only violet brand hues survive that set.
+So: **if your statuses are red, amber and green, your brand hue is not distinguishable from
+`ok`** — not for a tritanope. Only violet brand hues survive that set.
 
-**Blue is the commonest brand colour in software.** For most projects the honest answer from
-this tool is "your hue does not pass", which is why there is a `--brand-locked` mode rather than
-a refusal — more on that below.
+**Blue is the commonest brand colour in software.** Which makes what nilam does about it the
+more interesting half of the story, and it is the subject of the next section.
 
-nilam's signature is 285, and 285 is the *lowest* hue that clears the floor. That is an
-independent argument for a colour that had already been chosen by eye, years earlier, for
-entirely different reasons.
+nilam's signature is 285, and 285 is the *lowest* hue that clears the floor under every
+vision. That is an independent argument for a colour that had already been chosen by eye,
+years earlier, for entirely different reasons.
+
+### The finding that changed the rule
+
+The obvious response to the sweep is to refuse: no palette for a blue brand. nilam did that
+for three releases, and **0.4.0 reversed it**, on an argument worth reading because it is
+about prevalence rather than about colour.
+
+| collapse | who it reaches | old treatment |
+|---|---|---|
+| red vs green — `danger`/`ok` under deuteranopia | roughly **1 in 12 men** | reported, glyph required |
+| blue vs green — brand/`ok` under tritanopia | roughly **1 in 10,000** | **refused to build** |
+
+The prover was strict about the rare collapse and pragmatic about the one roughly 800 times
+more common. And the strictness bought nothing for anybody: `npx nilam 250`, an unremarkable
+blue, emitted no palette at all. Refusing does not produce a better brand hue, because a brand
+colour usually predates the palette by years and is not the palette author's to change. It
+produces a tool nobody uses.
+
+The remedy that actually reaches a tritanope is the one red/green already gets: **a second,
+non-hue channel on the affected component.** A colour they cannot distinguish was never going
+to help them; a tick on the badge does.
+
+So under a dichromacy the collapse is now measured, reported, and handed to
+`proveStatusChannels()` — which still fails the build if one of those components is hue-only.
+Nothing is weakened. The obligation moves from the palette, where it could not be discharged,
+to the component, where it can.
+
+**Under normal vision it is still a hard failure.** If a save button and an error state are
+the same colour to *everyone*, no glyph makes that acceptable and the hue simply has to move.
+That rules out roughly 15–150, where the brand would sit on top of `danger` or `warn`.
+
+```bash
+# emits, reports the collapse, requires a glyph
+npx nilam 250
+
+# refuses instead, if the hue is still free to move
+npx nilam 250 --strict-brand-hue
+```
 
 ### And why `info` has no hue at all
 
@@ -259,14 +296,18 @@ Three rules, and they differ in kind:
 
 | | Rule | If it fails |
 |---|---|---|
-| **Hard** | the brand must never be confusable with a status, under any vision | build fails — always avoidable, because the brand hue is the one free variable |
+| **Hard** | the brand separates from every status **under normal vision** | build fails — no glyph makes a universal collision acceptable |
 | **Hard** | every status pair separates under normal vision | build fails |
-| **Measured** | which status pairs collapse under each dichromacy | reported, and it becomes a requirement on components |
+| **Measured** | which pairs — status/status *and* brand/status — collapse under each dichromacy | reported, and it becomes a requirement on components |
 
-The binding constraint on the whole palette turns out to be a **single cell**: brand against
-`ok`, under tritanopia, in dark mode, at **0.0924** against a floor of 0.09. That is the number
-the hue search maximises, and it is why `ok` sits at 142 rather than anywhere else in its
-window.
+`--strict-brand-hue` moves the brand's dichromacy row back into the hard set, for when the hue
+genuinely is still free and you would rather be told to move it than take on a glyph
+obligation.
+
+The tightest cell in the whole search is brand against `ok`, under tritanopia, in dark mode, at
+**0.0924** against a floor of 0.09. That is still the number the hue search maximises, and it is
+why `ok` sits at 142 rather than anywhere else in its window — so the default palette clears the
+floor everywhere, and the reporting path exists for the hues that do not.
 
 The third rule is enforced, not suggested:
 
@@ -288,10 +329,9 @@ proveStatusChannels(collapses, {
 });
 ```
 
-And when the brand hue cannot move — because it predates the palette — `--brand-locked`
-reclassifies brand-versus-status from **asserted** to **measured**, which is exactly the
-treatment red-versus-green already gets and for exactly the same reason. Nothing is weakened.
-The burden moves from the palette to the component, where it can actually be discharged.
+Note what that call does *not* care about. It takes the collapse list and the channels, and it
+does not know or ask whether a given collapse came from red-versus-green or from a blue brand.
+Once the answer is "that component needs a second channel", the two cases are the same problem.
 
 ### Where this stops
 

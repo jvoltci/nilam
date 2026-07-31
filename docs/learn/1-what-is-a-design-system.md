@@ -173,9 +173,9 @@ computed from it. `--neutral-11` is not a grey somebody liked. It is the lightne
 text reaches 4.5:1 against `--neutral-3`, found by arithmetic. So the value cannot exist at a
 number that breaks the promise, because the promise is what produced the number.
 
-That gives you the thing the eight greys were missing: something fails. **7,430 assertions**
-run on every push, plus 31 rendered screenshots compared pixel by pixel. When a step drifts,
-the build stops.
+That gives you the thing the eight greys were missing: something fails. **More than 7,400
+assertions** run on every push, plus 31 rendered screenshots compared pixel by pixel. When a
+step drifts, the build stops.
 
 What nilam does not claim: that using it makes an interface accessible. It makes the colour
 decisions checkable. Layout, wording, focus order and screen-reader behaviour are still

@@ -122,6 +122,12 @@ const ROLE = {
     + 'solid, decided per hue AND per mode. White on a violet solid, black on an amber '
     + 'one, black on the dark-mode glow. Hard-coding `color: white` on a filled button is '
     + 'the most common contrast bug in the systems I read. WCAG 1.4.3 governs it at 4.5:1.',
+  'ink-max': 'MAXIMUM ink for this mode, not step 12. Step 12 answers a 7:1 contract and '
+    + 'lands on a dark slate; this is 19.41:1. For things that want every bit of contrast '
+    + 'available rather than enough for text: a QR code, a barcode, a data matrix.',
+  void: 'BELOW the page, which no numbered step is — the dark ramp starts at step 1 and only '
+    + 'lightens. For a surface that must read as absence rather than as one more panel: a '
+    + 'video matte, an image-viewer letterbox, an editor gutter.',
   surface: 'a raised surface — a card, a popover, a dialog. The one surface carrying NO '
     + 'tint at all: in light mode the page is faintly cool and the card is pure white, and '
     + 'the tint reads as light precisely because the thing beside it has none. The eye is '
@@ -294,6 +300,36 @@ function colourGroup(palette, mode) {
       solved: false,
     }),
   };
+  /* --ink-max and --void, which sit beside surface for the same reason: css.mjs emits all
+   * three under neutral but names them without a family prefix, and this export exists to
+   * match the stylesheet exactly rather than to tidy it. `solved: false` on all three —
+   * they are anchors the contracts are measured against, not values a contract produced. */
+  for (const [name, c] of [
+    ['ink-max', mode === 'light'
+      ? { L: 0.16, C: 0, h: palette[mode].neutral[1].h }
+      : { L: 1, C: 0, h: palette[mode].neutral[1].h }],
+    ['void', mode === 'light'
+      ? { L: 0.90, C: 0.007, h: palette[mode].neutral[1].h }
+      : { L: 0.10, C: 0.007, h: palette[mode].neutral[1].h }],
+  ]) {
+    group[name] = {
+      $value: colourValue(c),
+      $description: ROLE[name],
+      $extensions: ext({
+        role: name === 'ink-max' ? 'maximum ink' : 'below the page',
+        mode,
+        cssVar: `--${name}`,
+        oklch: { L: c.L, C: c.C, h: c.h },
+        contrast: {
+          against: name === 'ink-max' ? 'color.surface' : 'color.neutral.1',
+          ratio: round(contrast(c, name === 'ink-max'
+            ? palette[mode].neutral.surface
+            : palette[mode].neutral[1]), 3),
+        },
+        solved: false,
+      }),
+    };
+  }
   return group;
 }
 

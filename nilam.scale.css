@@ -1,0 +1,169 @@
+/* nilam — the scales. Everything that is not a colour.
+ *
+ * Hand-authored, because none of it is solvable the way colour is. There is no contrast
+ * requirement to invert for "how big is a heading". What I can do is state where each
+ * number comes from, so the next person can argue with the reasoning instead of
+ * guessing at the intent.
+ */
+
+@layer nilam.tokens {
+  :root {
+    /* ── type ──────────────────────────────────────────────────────────────
+     *
+     * A 1.2 minor-third ratio, fluid between a 360px and a 1280px viewport. 1.2 rather
+     * than the more fashionable 1.25 or 1.333: those look better in a specimen and fall
+     * apart in a dense UI, where you need four or five distinct sizes inside one card
+     * and a big ratio runs out of room by the third one.
+     *
+     * clamp() on every step, so there is no breakpoint at which type jumps. The rem
+     * units mean a user's own font-size setting still scales all of it — 1.4.4. */
+    --text-000: clamp(0.6875rem, 0.67rem + 0.09vw, 0.75rem);   /* micro: labels, legal */
+    --text-00:  clamp(0.75rem, 0.73rem + 0.11vw, 0.8125rem);   /* small: captions, meta */
+    --text-0:   clamp(0.8125rem, 0.79rem + 0.12vw, 0.875rem);  /* secondary body */
+    --text-1:   clamp(0.875rem, 0.85rem + 0.13vw, 0.9375rem);  /* body — the default */
+    --text-2:   clamp(1rem, 0.96rem + 0.2vw, 1.125rem);
+    --text-3:   clamp(1.125rem, 1.06rem + 0.32vw, 1.375rem);
+    --text-4:   clamp(1.375rem, 1.26rem + 0.57vw, 1.75rem);
+    --text-5:   clamp(1.625rem, 1.42rem + 1.02vw, 2.25rem);
+    --text-6:   clamp(2rem, 1.6rem + 2vw, 3rem);
+    --text-7:   clamp(2.5rem, 1.8rem + 3.5vw, 4rem);
+    /* The display size, for one thing per page. Weight 200 at this size, never 700:
+       large type gets its presence from size, and adding weight to both is why
+       "bold and big" reads as shouting rather than as confidence. */
+    --text-display: clamp(3rem, 1.6rem + 7vw, 7.5rem);
+
+    --font-sans:
+      system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif,
+      'Apple Color Emoji', 'Segoe UI Emoji';
+    --font-mono:
+      ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+
+    --weight-normal: 400;
+    --weight-medium: 500;
+    --weight-semibold: 600;
+    --weight-bold: 700;
+
+    /* Line height falls as size rises. A single value cannot serve both: 1.6 on a
+       display heading looks like a gap, 1.2 on body text is unreadable. */
+    --leading-tight: 1.15;
+    --leading-snug: 1.35;
+    --leading-normal: 1.6;
+    --leading-loose: 1.75;
+
+    /* Tracking rises as size falls, which is the same rule in the other direction.
+       Micro text at 0 tracking looks cramped; that is why every good UI sets its
+       10px uppercase labels wide. */
+    --tracking-tight: -0.02em;
+    --tracking-normal: 0;
+    --tracking-wide: 0.04em;
+    --tracking-micro: 0.14em;
+
+    /* 65ch is the measure at which prose stops being tiring to read. Not a preference —
+       it is the one typographic number with a real literature behind it. */
+    --measure: 65ch;
+
+    /* ── space ─────────────────────────────────────────────────────────────
+     *
+     * A 4px grid, in rem so it scales with the user's font size. Doubling from
+     * space-3 up: small increments matter inside a control, and past 1rem the eye
+     * cannot tell 20px from 24px anyway, so offering both only invites inconsistency. */
+    --space-0: 0.125rem;   /*  2px */
+    --space-1: 0.25rem;    /*  4px */
+    --space-2: 0.5rem;     /*  8px */
+    --space-3: 0.75rem;    /* 12px */
+    --space-4: 1rem;       /* 16px */
+    --space-5: 1.5rem;     /* 24px */
+    --space-6: 2rem;       /* 32px */
+    --space-7: 3rem;       /* 48px */
+    --space-8: 4rem;       /* 64px */
+    --space-9: 6rem;       /* 96px */
+
+    /* ── radius ────────────────────────────────────────────────────────────
+     *
+     * Radii must nest correctly or the corners look wrong in a way people notice but
+     * cannot name: an inner radius should be the outer minus the padding between them.
+     * Hence a scale with small gaps at the bottom, where nesting actually happens. */
+    --r-1: 0.25rem;
+    --r-2: 0.375rem;
+    --r-3: 0.5rem;
+    --r-4: 0.625rem;
+    --r-5: 0.875rem;
+    --r-6: 1.25rem;
+    --r-full: 9999px;
+
+    /* ── lines ─────────────────────────────────────────────────────────────
+     *
+     * 1px, but as a token, because a hairline on a 3x display should not be 3 device
+     * pixels. Kept separate from radius so a theme can go borderless without touching
+     * anything else. */
+    --line-1: 1px;
+    --line-2: 2px;
+
+    /* ── motion ────────────────────────────────────────────────────────────
+     *
+     * Short. 150ms is roughly where a UI transition stops reading as "responding" and
+     * starts reading as "loading". The long ones are only for things that travel a
+     * distance — a drawer, a dialog. */
+    --dur-0: 80ms;
+    --dur-1: 150ms;
+    --dur-2: 240ms;
+    --dur-3: 400ms;
+
+    /* ease-out for anything entering (fast then settling reads as arriving), and the
+       spring for anything the user directly caused, which is where a little overshoot
+       reads as physical rather than as decoration. */
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    /* ── focus ─────────────────────────────────────────────────────────────
+     *
+     * 2px, offset 2px. The offset is not cosmetic: a ring drawn flush against a filled
+     * button of similar lightness is invisible, and 1.4.11 wants the ring to have 3:1
+     * against ADJACENT colours. The gap guarantees the adjacent colour is the page. */
+    --ring-width: 2px;
+    --ring-offset: 2px;
+
+    /* ── elevation ─────────────────────────────────────────────────────────
+     *
+     * The alphas differ by an order of magnitude between modes, and this is the single
+     * least obvious thing in the file.
+     *
+     * Browsers composite alpha in GAMMA-ENCODED sRGB, not linear. So black at 8% over a
+     * near-white page darkens it a lot, and the same black at 8% over a near-black page
+     * changes almost nothing — the encoding has already spent most of its precision at
+     * the dark end. Measured, the gap needed to LOOK equal is about 23x.
+     *
+     * Which is why "our dark mode shadows look flat" is a universal complaint and why
+     * dark themes that work switch to a light rim instead. Both are here: a shadow, and
+     * a top rim that only exists in dark mode, where it does the job the shadow cannot. */
+    --shadow-colour: light-dark(oklch(0 0 0), oklch(0 0 0));
+    --shadow-1:
+      0 1px 2px light-dark(oklch(0 0 0 / 0.05), oklch(0 0 0 / 0.55)),
+      0 1px 1px light-dark(oklch(0 0 0 / 0.03), oklch(0 0 0 / 0.4));
+    --shadow-2:
+      0 1px 2px light-dark(oklch(0 0 0 / 0.04), oklch(0 0 0 / 0.5)),
+      0 8px 20px -6px light-dark(oklch(0 0 0 / 0.09), oklch(0 0 0 / 0.6));
+    --shadow-3:
+      0 2px 4px light-dark(oklch(0 0 0 / 0.04), oklch(0 0 0 / 0.5)),
+      0 16px 40px -12px light-dark(oklch(0 0 0 / 0.14), oklch(0 0 0 / 0.7));
+
+    /* The rim. inset, top only, and transparent in light mode where it would read as a
+       scratch. In dark mode it is what makes a raised surface look raised. */
+    --rim: inset 0 1px 0 light-dark(transparent, oklch(1 0 0 / 0.06));
+
+    /* Dialog backdrop. Heavier in light mode, because dimming a bright page needs more
+       than dimming a dark one for the same perceived separation. */
+    --scrim: light-dark(oklch(0.2 0.01 285 / 0.4), oklch(0 0 0 / 0.6));
+
+    /* ── z ────────────────────────────────────────────────────────────────
+     *
+     * Only four, and three of them are legacy. Dialogs and popovers now live in the
+     * browser's top layer, which no z-index can reach, so the stacking bugs these
+     * numbers used to solve mostly do not exist any more. */
+    --z-base: 1;
+    --z-sticky: 10;
+    --z-overlay: 100;
+    --z-max: 1000;
+  }
+}

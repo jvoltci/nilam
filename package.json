@@ -1,0 +1,69 @@
+{
+  "name": "nilam",
+  "version": "0.1.0",
+  "description": "Proven colour. A design system whose palette is solved from contrast requirements and verified under three kinds of colour blindness.",
+  "keywords": [
+    "design-system",
+    "css",
+    "design-tokens",
+    "colour",
+    "color",
+    "oklch",
+    "accessibility",
+    "a11y",
+    "wcag",
+    "contrast",
+    "color-blindness",
+    "colour-blindness",
+    "dichromacy",
+    "deuteranopia",
+    "dark-mode",
+    "palette",
+    "color-scale"
+  ],
+  "license": "MIT",
+  "author": "JAI <jvoltci@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jvoltci/nilam.git"
+  },
+  "homepage": "https://github.com/jvoltci/nilam#readme",
+  "bugs": {
+    "url": "https://github.com/jvoltci/nilam/issues"
+  },
+  "type": "module",
+  "sideEffects": [
+    "*.css"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "exports": {
+    ".": "./src/index.mjs",
+    "./nilam.css": "./nilam.css",
+    "./tokens.css": "./nilam.tokens.css",
+    "./scale.css": "./nilam.scale.css",
+    "./base.css": "./nilam.base.css",
+    "./components.css": "./nilam.components.css",
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "nilam": "./src/cli.mjs"
+  },
+  "files": [
+    "src/",
+    "nilam.css",
+    "nilam.tokens.css",
+    "nilam.scale.css",
+    "nilam.base.css",
+    "nilam.components.css",
+    "build.mjs",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node test/prove.test.mjs",
+    "prepublishOnly": "node build.mjs && node test/prove.test.mjs"
+  }
+}

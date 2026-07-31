@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>polychroma — the blue sweep</title>
+<style>
+  * { box-sizing: border-box; }
+  :root { --page:#f4f4f6; --pane:#fff; --edge:#e2e2e7; --text:#111114; --dim:#6e6e78; }
+  html.dark { --page:#131316; --pane:#1c1c20; --edge:#2e2e34; --text:#f2f2f5; --dim:#9a9aa4; }
+  body {
+    margin:0; padding:40px 28px 90px; background:var(--page); color:var(--text);
+    font:400 14px/1.6 ui-sans-serif,system-ui,-apple-system,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap { max-width:1360px; margin:0 auto; }
+  .eyebrow { font:500 11px/1 ui-monospace,monospace; letter-spacing:.16em; text-transform:uppercase; color:var(--dim); margin:0 0 12px; }
+  h1 { font-size:38px; font-weight:300; letter-spacing:-.03em; margin:0 0 10px; }
+  .lede { color:var(--dim); max-width:46rem; margin:0 0 34px; }
+  .toggle { position:fixed; top:16px; right:16px; z-index:9; font:inherit; font-size:13px;
+    padding:9px 15px; border-radius:9px; border:1px solid var(--edge); background:var(--pane); color:var(--text); cursor:pointer; }
+
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(390px,1fr)); gap:18px; }
+
+  /* Each candidate paints itself entirely from its own solved tokens. The
+     surrounding page chrome is neutral so nothing borrows from a neighbour. */
+  .cand {
+    border:1px solid var(--edge); border-radius:15px; overflow:hidden;
+    background:var(--n1); color:var(--n12);
+  }
+  .cand header { padding:16px 18px 12px; }
+  .cand h2 { font-size:17px; font-weight:600; letter-spacing:-.01em; margin:0; display:inline; }
+  .cand header code { font:11px/1 ui-monospace,monospace; color:var(--n11); margin-left:8px; }
+  .cand header p { font-size:12.5px; color:var(--n11); margin:5px 0 0; }
+
+  .ramp { display:flex; gap:2px; padding:0 18px; }
+  .ramp i { flex:1; height:26px; border-radius:3px; display:block; }
+  .ramp-n { padding-top:3px; padding-bottom:14px; }
+  .ramp-n i { height:11px; }
+
+  .ui { margin:0 18px 16px; background:var(--surface); border:1px solid var(--n6); border-radius:12px; padding:14px;
+        box-shadow:0 1px 2px rgb(0 0 0 / .04), 0 10px 24px -12px rgb(0 0 0 / .10); }
+
+  nav { display:flex; gap:4px; margin-bottom:13px; }
+  nav a { display:flex; align-items:center; gap:7px; padding:6px 10px; border-radius:8px;
+          font-size:13px; color:var(--n11); text-decoration:none; }
+  nav a b { width:5px; height:5px; border-radius:50%; background:var(--n7); }
+  nav a.on { background:var(--b3); color:var(--b11); font-weight:500; }
+  nav a.on b { background:var(--b9); }
+
+  .acts { display:flex; gap:8px; margin-bottom:13px; }
+  button { font:inherit; font-size:13px; line-height:1; padding:10px 14px; border-radius:9px;
+           border:1px solid var(--n7); background:transparent; color:var(--n12); cursor:pointer; }
+  .primary { background:var(--b9); border-color:var(--b9); color:var(--ink); font-weight:500;
+             box-shadow:0 1px 2px rgb(0 0 0 / .12); }
+  .primary:hover { background:var(--b10); border-color:var(--b10); }
+
+  .body { font-size:13px; color:var(--n11); margin:0 0 12px; }
+  .body a { color:var(--b11); text-decoration-color:var(--b8); text-underline-offset:.15em; }
+
+  .note { display:flex; gap:9px; align-items:flex-start; font-size:12.5px;
+          background:var(--b3); border:1px solid var(--b6); color:var(--b11);
+          border-radius:9px; padding:10px 12px; }
+  .note span { flex:none; width:17px; height:17px; border-radius:50%; background:var(--b9); color:var(--ink);
+               display:grid; place-items:center; font:700 10px/1 ui-monospace,monospace; }
+
+  .cand footer { display:flex; gap:14px; flex-wrap:wrap; padding:0 18px 15px;
+                 font:11px/1.4 ui-monospace,monospace; color:var(--n11); }
+  .cand footer code { color:var(--n12); }
+</style>
+</head>
+<body>
+<button class="toggle" id="mode" type="button">Dark</button>
+<div class="wrap">
+  <p class="eyebrow">polychroma · 10 candidates · every value solved</p>
+  <h1>The blue sweep.</h1>
+  <p class="lede">
+    Ten hues from cyan-leaning blue to the violet edge, each run through the same
+    solver. Not one lightness was picked — every step inverts a contrast
+    requirement, so all ten are equally legal. What differs is only the hue, which
+    means this is a pure taste comparison with the accessibility argument already settled.
+  </p>
+  <div class="grid">
+
+<article class="cand" style="--b1:#f8f8f9;--b2:#f0f3f4;--b3:#e4ecf0;--b4:#d9e6ed;--b5:#cbe1eb;--b6:#a9d0e2;--b7:#5f97af;--b8:#447f98;--b9:#2599c3;--b10:#218cb2;--b11:#3f7085;--b12:#39505a;--n1:#f4f9fc;--n2:#eef3f6;--n3:#e6ecee;--n4:#e0e5e8;--n5:#d9dee1;--n6:#c6cbce;--n7:#8b9093;--n8:#73787b;--n9:#2a2f31;--n10:#1e2224;--n11:#666a6d;--n12:#494e50;--ink:#0d0d0d;--surface:#ffffff"
+         data-dark="--b1:#0f1112;--b2:#16191b;--b3:#1a2225;--b4:#1e292e;--b5:#202f37;--b6:#243841;--b7:#3f6677;--b8:#437e97;--b9:#33c4f9;--b10:#73d2fa;--b11:#528faa;--b12:#84b2c7;--n1:#0d1113;--n2:#15191b;--n3:#1d2123;--n4:#24282a;--n5:#2a2e30;--n6:#323638;--n7:#5d6264;--n8:#72777a;--n9:#5e6365;--n10:#696e70;--n11:#84898b;--n12:#a7acaf;--ink:#0d0d0d;--surface:#202020">
+  <header>
+    <h2>cerulean</h2>
+    <code>hue 228</code>
+    <p>cyan-leaning, coldest</p>
+  </header>
+
+  <div class="ramp"><i style="background:#f8f8f9"></i><i style="background:#f0f3f4"></i><i style="background:#e4ecf0"></i><i style="background:#d9e6ed"></i><i style="background:#cbe1eb"></i><i style="background:#a9d0e2"></i><i style="background:#5f97af"></i><i style="background:#447f98"></i><i style="background:#2599c3"></i><i style="background:#218cb2"></i><i style="background:#3f7085"></i><i style="background:#39505a"></i></div>
+  <div class="ramp ramp-n"><i style="background:#f4f9fc"></i><i style="background:#eef3f6"></i><i style="background:#e6ecee"></i><i style="background:#e0e5e8"></i><i style="background:#d9dee1"></i><i style="background:#c6cbce"></i><i style="background:#8b9093"></i><i style="background:#73787b"></i><i style="background:#2a2f31"></i><i style="background:#1e2224"></i><i style="background:#666a6d"></i><i style="background:#494e50"></i></div>
+
+  <div class="ui">
+    <nav>
+      <a class="on"><b></b>Overview</a>
+      <a><b></b>Traffic</a>
+    </nav>
+    <div class="acts">
+      <button class="primary">Save changes</button>
+      <button>Cancel</button>
+    </div>
+    <p class="body">Body text on the card, with <a href="#">a link that carries the hue</a> inside it.</p>
+    <div class="note"><span>i</span>A tinted callout at step 3, bordered at 6, text at 11.</div>
+  </div>
+
+  <footer>
+    <span>solid <code>#2599c3</code></span>
+    <span>3.09:1 on page</span>
+    <span>chroma 0.115</span>
+  </footer>
+</article>
+
+<article class="cand" style="--b1:#f8f8f9;--b2:#f0f3f4;--b3:#e5ecf0;--b4:#dae6ed;--b5:#cee0eb;--b6:#aecfe2;--b7:#5f96b6;--b8:#437e9f;--b9:#2597cd;--b10:#218abb;--b11:#3f6f8b;--b12:#39505d;--n1:#f4f9fd;--n2:#eef3f6;--n3:#e6ecef;--n4:#e0e5e8;--n5:#d9dee1;--n6:#c6cbce;--n7:#8b9093;--n8:#74787b;--n9:#2b2e31;--n10:#1e2224;--n11:#666a6d;--n12:#494d50;--ink:#0d0d0d;--surface:#ffffff"
+         data-dark="--b1:#0f1112;--b2:#16191c;--b3:#1a2226;--b4:#1e292f;--b5:#202f38;--b6:#243843;--b7:#3e657c;--b8:#437d9d;--b9:#2fb8f8;--b10:#67c6fa;--b11:#528fb1;--b12:#84b2cd;--n1:#0e1113;--n2:#16191b;--n3:#1d2123;--n4:#24282a;--n5:#2a2e30;--n6:#323638;--n7:#5d6164;--n8:#73777a;--n9:#5e6265;--n10:#696e70;--n11:#84888b;--n12:#a8acaf;--ink:#0d0d0d;--surface:#202020">
+  <header>
+    <h2>azure</h2>
+    <code>hue 235</code>
+    <p>sky, open</p>
+  </header>
+
+  <div class="ramp"><i style="background:#f8f8f9"></i><i style="background:#f0f3f4"></i><i style="background:#e5ecf0"></i><i style="background:#dae6ed"></i><i style="background:#cee0eb"></i><i style="background:#aecfe2"></i><i style="background:#5f96b6"></i><i style="background:#437e9f"></i><i style="background:#2597cd"></i><i style="background:#218abb"></i><i style="background:#3f6f8b"></i><i style="background:#39505d"></i></div>
+  <div class="ramp ramp-n"><i style="background:#f4f9fd"></i><i style="background:#eef3f6"></i><i style="background:#e6ecef"></i><i style="background:#e0e5e8"></i><i style="background:#d9dee1"></i><i style="background:#c6cbce"></i><i style="background:#8b9093"></i><i style="background:#74787b"></i><i style="background:#2b2e31"></i><i style="background:#1e2224"></i><i style="background:#666a6d"></i><i style="background:#494d50"></i></div>
+
+  <div class="ui">
+    <nav>
+      <a class="on"><b></b>Overview</a>
+      <a><b></b>Traffic</a>
+    </nav>
+    <div class="acts">
+      <button class="primary">Save changes</button>
+      <button>Cancel</button>
+    </div>
+    <p class="body">Body text on the card, with <a href="#">a link that carries the hue</a> inside it.</p>
+    <div class="note"><span>i</span>A tinted callout at step 3, bordered at 6, text at 11.</div>
+  </div>
+
+  <footer>
+    <span>solid <code>#2597cd</code></span>
+    <span>3.11:1 on page</span>
+    <span>chroma 0.125</span>
+  </footer>
+</article>
+
+<article class="cand" style="--b1:#f8f8f9;--b2:#f0f3f4;--b3:#e6ebf0;--b4:#dce5ed;--b5:#d0dfeb;--b6:#b3cde2;--b7:#5e95be;--b8:#437da7;--b9:#2596db;--b10:#2189c9;--b11:#3e6e91;--b12:#394f60;--n1:#f4f9fd;--n2:#eef3f7;--n3:#e7ebef;--n4:#e0e5e8;--n5:#d9dee2;--n6:#c6cbce;--n7:#8c9093;--n8:#74787b;--n9:#2b2e31;--n10:#1e2224;--n11:#666a6d;--n12:#4a4d50;--ink:#0d0d0d;--surface:#ffffff"
+         data-dark="--b1:#0f1112;--b2:#15191c;--b3:#1a2127;--b4:#1d2831;--b5:#202f3b;--b6:#243746;--b7:#3e6582;--b8:#427ca5;--b9:#2ba9f7;--b10:#5ab7f9;--b11:#518db9;--b12:#8bb0cd;--n1:#0e1113;--n2:#16191c;--n3:#1e2124;--n4:#24282a;--n5:#2a2e30;--n6:#323639;--n7:#5d6164;--n8:#73777a;--n9:#5e6265;--n10:#696d71;--n11:#84888c;--n12:#a8acb0;--ink:#0d0d0d;--surface:#202020">
+  <header>
+    <h2>cobalt</h2>
+    <code>hue 242</code>
+    <p>the classic web blue</p>
+  </header>
+
+  <div class="ramp"><i style="background:#f8f8f9"></i><i style="background:#f0f3f4"></i><i style="background:#e6ebf0"></i><i style="background:#dce5ed"></i><i style="background:#d0dfeb"></i><i style="background:#b3cde2"></i><i style="background:#5e95be"></i><i style="background:#437da7"></i><i style="background:#2596db"></i><i style="background:#2189c9"></i><i style="background:#3e6e91"></i><i style="background:#394f60"></i></div>
+  <div class="ramp ramp-n"><i style="background:#f4f9fd"></i><i style="background:#eef3f7"></i><i style="background:#e7ebef"></i><i style="background:#e0e5e8"></i><i style="background:#d9dee2"></i><i style="background:#c6cbce"></i><i style="background:#8c9093"></i><i style="background:#74787b"></i><i style="background:#2b2e31"></i><i style="background:#1e2224"></i><i style="background:#666a6d"></i><i style="background:#4a4d50"></i></div>
+
+  <div class="ui">
+    <nav>
+      <a class="on"><b></b>Overview</a>
+      <a><b></b>Traffic</a>
+    </nav>
+    <div class="acts">
+      <button class="primary">Save changes</button>
+      <button>Cancel</button>
+    </div>
+    <p class="body">Body text on the card, with <a href="#">a link that carries the hue</a> inside it.</p>
+    <div class="note"><span>i</span>A tinted callout at step 3, bordered at 6, text at 11.</div>
+  </div>
+
+  <footer>
+    <span>solid <code>#2596db</code></span>
+    <span>3.07:1 on page</span>
+    <span>chroma 0.141</span>
+  </footer>
+</article>
+
+<article class="cand" style="--b1:#f8f8f9;--b2:#f1f2f4;--b3:#e7ebf0;--b4:#dde5ed;--b5:#d2dfeb;--b6:#b7cce3;--b7:#5d93c8;--b8:#427bb2;--b9:#2492ec;--b10:#2085d8;--b11:#3d6d9b;--b12:#394f65;--n1:#f5f9fd;--n2:#eff3f7;--n3:#e7ebef;--n4:#e1e5e9;--n5:#dadee2;--n6:#c7cace;--n7:#8c9093;--n8:#74787c;--n9:#2b2e31;--n10:#1f2124;--n11:#676a6e;--n12:#4a4d50;--ink:#0d0d0d;--surface:#ffffff"
+         data-dark="--b1:#0f1113;--b2:#15191d;--b3:#1a2129;--b4:#1d2833;--b5:#1f2f3e;--b6:#24374a;--b7:#3d6489;--b8:#427ab0;--b9:#2698f5;--b10:#4ea6f8;--b11:#508cc5;--b12:#91afce;--n1:#0e1113;--n2:#16191c;--n3:#1e2124;--n4:#25272a;--n5:#2b2e31;--n6:#333639;--n7:#5e6165;--n8:#73777b;--n9:#5f6266;--n10:#6a6d71;--n11:#85888c;--n12:#a8acb0;--ink:#0d0d0d;--surface:#202020">
+  <header>
+    <h2>sapphire</h2>
+    <code>hue 249</code>
+    <p>deep, saturated</p>
+  </header>
+
+  <div class="ramp"><i style="background:#f8f8f9"></i><i style="background:#f1f2f4"></i><i style="background:#e7ebf0"></i><i style="background:#dde5ed"></i><i style="background:#d2dfeb"></i><i style="background:#b7cce3"></i><i style="background:#5d93c8"></i><i style="background:#427bb2"></i><i style="background:#2492ec"></i><i style="background:#2085d8"></i><i style="background:#3d6d9b"></i><i style="background:#394f65"></i></div>
+  <div class="ramp ramp-n"><i style="background:#f5f9fd"></i><i style="background:#eff3f7"></i><i style="background:#e7ebef"></i><i style="background:#e1e5e9"></i><i style="background:#dadee2"></i><i style="background:#c7cace"></i><i style="background:#8c9093"></i><i style="background:#74787c"></i><i style="background:#2b2e31"></i><i style="background:#1f2124"></i><i style="background:#676a6e"></i><i style="background:#4a4d50"></i></div>
+
+  <div class="ui">
+    <nav>
+      <a class="on"><b></b>Overview</a>
+      <a><b></b>Traffic</a>
+    </nav>
+    <div class="acts">
+      <button class="primary">Save changes</button>
+      <button>Cancel</button>
+    </div>
+    <p class="body">Body text on the card, with <a href="#">a link that carries the hue</a> inside it.</p>
+    <div class="note"><span>i</span>A tinted callout at step 3, bordered at 6, text at 11.</div>
+  </div>
+
+  <footer>
+    <span>solid <code>#2492ec</code></span>
+    <span>3.11:1 on page</span>
+    <span>chroma 0.164</span>
+  </footer>
+</article>
+
+<article class="cand" style="--b1:#f8f8f9;--b2:#f1f2f4;--b3:#e7ebf0;--b4:#dee5ed;--b5:#d4deec;--b6:#bacbe3;--b7:#6491ce;--b8:#4079c2;--b9:#1f82f5;--b10:#1b76e0;--b11:#3c6ba9;--b12:#384e6c;--n1:#f5f9fd;--n2:#eff3f7;--n3:#e8ebef;--n4:#e1e4e9;--n5:#dadee2;--n6:#c7cacf;--n7:#8c8f94;--n8:#75787c;--n9:#2c2e31;--n10:#1f2125;--n11:#676a6e;--n12:#4a4d51;--ink:#0d0d0d;--surface:#ffffff"
+         data-dark="--b1:#0f1113;--b2:#15191e;--b3:#1a212b;--b4:#1d2837;--b5:#1f2e43;--b6:#233650;--b7:#3c6295;--b8:#4078c1;--b9:#1f82f5;--b10:#4090f6;--b11:#5289d3;--b12:#96aece;--n1:#0e1114;--n2:#17191c;--n3:#1e2124;--n4:#25272b;--n5:#2b2d31;--n6:#333539;--n7:#5e6165;--n8:#74777b;--n9:#5f6266;--n10:#6a6d71;--n11:#85888c;--n12:#a9acb0;--ink:#0d0d0d;--surface:#202020">
+  <header>
+    <h2>ultramarine</h2>
+    <code>hue 256</code>
+    <p>Tailwind blue-600 sits here</p>
+  </header>
+
+  <div class="ramp"><i style="background:#f8f8f9"></i><i style="background:#f1f2f4"></i><i style="background:#e7ebf0"></i><i style="background:#dee5ed"></i><i style="background:#d4deec"></i><i style="background:#bacbe3"></i><i style="background:#6491ce"></i><i style="background:#4079c2"></i><i style="background:#1f82f5"></i><i style="background:#1b76e0"></i><i style="background:#3c6ba9"></i><i style="background:#384e6c"></i></div>
+  <div class="ramp ramp-n"><i style="background:#f5f9fd"></i><i style="background:#eff3f7"></i><i style="background:#e8ebef"></i><i style="background:#e1e4e9"></i><i style="background:#dadee2"></i><i style="background:#c7cacf"></i><i style="background:#8c8f94"></i><i style="background:#75787c"></i><i style="background:#2c2e31"></i><i style="background:#1f2125"></i><i style="background:#676a6e"></i><i style="background:#4a4d51"></i></div>
+
+  <div class="ui">
+    <nav>
+      <a class="on"><b></b>Overview</a>
+      <a><b></b>Traffic</a>
+    </nav>
+    <div class="acts">
+      <button class="primary">Save changes</button>
+      <button>Cancel</button>
+    </div>
+    <p class="body">Body text on the card, with <a href="#">a link that carries the hue</a> inside it.</p>
+    <div class="note"><span>i</span>A tinted callout at step 3, bordered at 6, text at 11.</div>
+  </div>
+
+  <footer>
+    <span>solid <code>#1f82f5</code></span>
+    <span>3.57:1 on page</span>
+    <span>chroma 0.193</span>
+  </footer>
+</article>
+
+<article class="cand" style="--b1:#f8f8f9;--b2:#f1f2f4;--b3:#e8ebf0;--b4:#e0e4ed;--b5:#d6deec;--b6:#becbe3;--b7:#6f8fce;--b8:#4774d3;--b9:#1056f3;--b10:#0d4cdb;--b11:#3665c8;--b12:#344c7c;--n1:#f6f8fd;--n2:#f0f2f7;--n3:#e8ebf0;--n4:#e2e4e9;--n5:#dbdde2;--n6:#c8cacf;--n7:#8d8f94;--n8:#75787c;--n9:#2c2e31;--n10:#1f2125;--n11:#676a6e;--n12:#4b4d51;--ink:#ffffff;--surface:#ffffff"
+         data-dark="--b1:#0e1115;--b2:#141921;--b3:#182130;--b4:#1b273f;--b5:#1c2d4e;--b6:#20345d;--b7:#365eb0;--b8:#4573d2;--b9:#1056f3;--b10:#2666f4;--b11:#6087d3;--b12:#9aacce;--n1:#0f1114;--n2:#17191c;--n3:#1f2124;--n4:#25272b;--n5:#2b2d31;--n6:#333539;--n7:#5f6165;--n8:#74777b;--n9:#606266;--n10:#6b6d71;--n11:#85888c;--n12:#a9acb0;--ink:#ffffff;--surface:#212121">
+  <header>
+    <h2>royal</h2>
+    <code>hue 263</code>
+    <p>the safest "corporate" blue</p>
+  </header>
+
+  <div class="ramp"><i style="background:#f8f8f9"></i><i style="background:#f1f2f4"></i><i style="background:#e8ebf0"></i><i style="background:#e0e4ed"></i><i style="background:#d6deec"></i><i style="background:#becbe3"></i><i style="background:#6f8fce"></i><i style="background:#4774d3"></i><i style="background:#1056f3"></i><i style="background:#0d4cdb"></i><i style="background:#3665c8"></i><i style="background:#344c7c"></i></div>
+  <div class="ramp ramp-n"><i style="background:#f6f8fd"></i><i style="background:#f0f2f7"></i><i style="background:#e8ebf0"></i><i style="background:#e2e4e9"></i><i style="background:#dbdde2"></i><i style="background:#c8cacf"></i><i style="background:#8d8f94"></i><i style="background:#75787c"></i><i style="background:#2c2e31"></i><i style="background:#1f2125"></i><i style="background:#676a6e"></i><i style="background:#4b4d51"></i></div>
+
+  <div class="ui">
+    <nav>
+      <a class="on"><b></b>Overview</a>
+      <a><b></b>Traffic</a>
+    </nav>
+    <div class="acts">
+      <button class="primary">Save changes</button>
+      <button>Cancel</button>
+    </div>
+    <p class="body">Body text on the card, with <a href="#">a link that carries the hue</a> inside it.</p>
+    <div class="note"><span>i</span>A tinted callout at step 3, bordered at 6, text at 11.</div>
+  </div>
+
+  <footer>
+    <span>solid <code>#1056f3</code></span>
+    <span>5.44:1 on page</span>
+    <span>chroma 0.244</span>
+  </footer>
+</article>
+
+<article class="cand" style="--b1:#f8f8f9;--b2:#f1f2f4;--b3:#e9ebf0;--b4:#e1e4ed;--b5:#d8ddec;--b6:#c1cae3;--b7:#788dce;--b8:#5771d3;--b9:#2f23f2;--b10:#281dd6;--b11:#4962c8;--b12:#37488a;--n1:#f6f8fd;--n2:#f0f2f7;--n3:#e9ebf0;--n4:#e2e4e9;--n5:#dbdde2;--n6:#c8cacf;--n7:#8d8f94;--n8:#76777c;--n9:#2c2e31;--n10:#202125;--n11:#686a6e;--n12:#4b4d51;--ink:#ffffff;--surface:#ffffff"
+         data-dark="--b1:#0e1016;--b2:#151823;--b3:#192035;--b4:#1c2546;--b5:#1e2a58;--b6:#23316a;--b7:#4259ba;--b8:#5670d2;--b9:#3949f3;--b10:#435bf4;--b11:#6c84d3;--b12:#9fabce;--n1:#0f1014;--n2:#17191c;--n3:#1f2024;--n4:#26272b;--n5:#2c2d31;--n6:#343539;--n7:#5f6165;--n8:#75767b;--n9:#606266;--n10:#6b6d71;--n11:#86888c;--n12:#aaabb0;--ink:#ffffff;--surface:#212121">
+  <header>
+    <h2>iris</h2>
+    <code>hue 270</code>
+    <p>the tipping point into violet</p>
+  </header>
+
+  <div class="ramp"><i style="background:#f8f8f9"></i><i style="background:#f1f2f4"></i><i style="background:#e9ebf0"></i><i style="background:#e1e4ed"></i><i style="background:#d8ddec"></i><i style="background:#c1cae3"></i><i style="background:#788dce"></i><i style="background:#5771d3"></i><i style="background:#2f23f2"></i><i style="background:#281dd6"></i><i style="background:#4962c8"></i><i style="background:#37488a"></i></div>
+  <div class="ramp ramp-n"><i style="background:#f6f8fd"></i><i style="background:#f0f2f7"></i><i style="background:#e9ebf0"></i><i style="background:#e2e4e9"></i><i style="background:#dbdde2"></i><i style="background:#c8cacf"></i><i style="background:#8d8f94"></i><i style="background:#76777c"></i><i style="background:#2c2e31"></i><i style="background:#202125"></i><i style="background:#686a6e"></i><i style="background:#4b4d51"></i></div>
+
+  <div class="ui">
+    <nav>
+      <a class="on"><b></b>Overview</a>
+      <a><b></b>Traffic</a>
+    </nav>
+    <div class="acts">
+      <button class="primary">Save changes</button>
+      <button>Cancel</button>
+    </div>
+    <p class="body">Body text on the card, with <a href="#">a link that carries the hue</a> inside it.</p>
+    <div class="note"><span>i</span>A tinted callout at step 3, bordered at 6, text at 11.</div>
+  </div>
+
+  <footer>
+    <span>solid <code>#2f23f2</code></span>
+    <span>7.51:1 on page</span>
+    <span>chroma 0.280</span>
+  </footer>
+</article>
+
+<article class="cand" style="--b1:#f8f8f9;--b2:#f2f2f4;--b3:#e9eaf0;--b4:#e2e4ed;--b5:#daddec;--b6:#c4c9e3;--b7:#818bcf;--b8:#666ed3;--b9:#4923f1;--b10:#401ed6;--b11:#585ec9;--b12:#414787;--n1:#f7f8fd;--n2:#f1f2f7;--n3:#e9eaef;--n4:#e3e4e9;--n5:#dcdde2;--n6:#c9cacf;--n7:#8e8f94;--n8:#76777c;--n9:#2d2e31;--n10:#202125;--n11:#68696e;--n12:#4c4c51;--ink:#ffffff;--surface:#ffffff"
+         data-dark="--b1:#0f1015;--b2:#161823;--b3:#1c1f34;--b4:#212444;--b5:#252955;--b6:#2c2f67;--b7:#5056ba;--b8:#646cd3;--b9:#5142f3;--b10:#5a55f4;--b11:#7781d4;--b12:#a3aace;--n1:#101014;--n2:#18181c;--n3:#202024;--n4:#26272b;--n5:#2c2d31;--n6:#343539;--n7:#606165;--n8:#75767b;--n9:#616166;--n10:#6c6d71;--n11:#87878c;--n12:#aaabb0;--ink:#ffffff;--surface:#212121">
+  <header>
+    <h2>indigo</h2>
+    <code>hue 277</code>
+    <p>Tailwind indigo, Stripe-ish</p>
+  </header>
+
+  <div class="ramp"><i style="background:#f8f8f9"></i><i style="background:#f2f2f4"></i><i style="background:#e9eaf0"></i><i style="background:#e2e4ed"></i><i style="background:#daddec"></i><i style="background:#c4c9e3"></i><i style="background:#818bcf"></i><i style="background:#666ed3"></i><i style="background:#4923f1"></i><i style="background:#401ed6"></i><i style="background:#585ec9"></i><i style="background:#414787"></i></div>
+  <div class="ramp ramp-n"><i style="background:#f7f8fd"></i><i style="background:#f1f2f7"></i><i style="background:#e9eaef"></i><i style="background:#e3e4e9"></i><i style="background:#dcdde2"></i><i style="background:#c9cacf"></i><i style="background:#8e8f94"></i><i style="background:#76777c"></i><i style="background:#2d2e31"></i><i style="background:#202125"></i><i style="background:#68696e"></i><i style="background:#4c4c51"></i></div>
+
+  <div class="ui">
+    <nav>
+      <a class="on"><b></b>Overview</a>
+      <a><b></b>Traffic</a>
+    </nav>
+    <div class="acts">
+      <button class="primary">Save changes</button>
+      <button>Cancel</button>
+    </div>
+    <p class="body">Body text on the card, with <a href="#">a link that carries the hue</a> inside it.</p>
+    <div class="note"><span>i</span>A tinted callout at step 3, bordered at 6, text at 11.</div>
+  </div>
+
+  <footer>
+    <span>solid <code>#4923f1</code></span>
+    <span>7.08:1 on page</span>
+    <span>chroma 0.273</span>
+  </footer>
+</article>
+
+<article class="cand" style="--b1:#f8f8f9;--b2:#f2f2f4;--b3:#eaeaf0;--b4:#e3e3ed;--b5:#dcdcec;--b6:#c7c8e3;--b7:#8b88cf;--b8:#7469d3;--b9:#6223f1;--b10:#571ed7;--b11:#6759c9;--b12:#4a4583;--n1:#f8f8fd;--n2:#f2f2f7;--n3:#eaeaef;--n4:#e3e4e9;--n5:#dddde2;--n6:#c9c9ce;--n7:#8f8f93;--n8:#77777c;--n9:#2d2d31;--n10:#212124;--n11:#69696e;--n12:#4c4c51;--ink:#ffffff;--surface:#ffffff"
+         data-dark="--b1:#101015;--b2:#181822;--b3:#1f1e32;--b4:#252442;--b5:#2b2852;--b6:#332e63;--b7:#5f51bb;--b8:#7368d3;--b9:#6738f3;--b10:#6f4ef4;--b11:#837ed4;--b12:#a8a8ce;--n1:#101014;--n2:#18181c;--n3:#202024;--n4:#27272b;--n5:#2d2d31;--n6:#353539;--n7:#606065;--n8:#76767b;--n9:#616166;--n10:#6c6c71;--n11:#87878c;--n12:#ababb0;--ink:#ffffff;--surface:#212121">
+  <header>
+    <h2>violet</h2>
+    <code>hue 285</code>
+    <p>your music app — the current pick</p>
+  </header>
+
+  <div class="ramp"><i style="background:#f8f8f9"></i><i style="background:#f2f2f4"></i><i style="background:#eaeaf0"></i><i style="background:#e3e3ed"></i><i style="background:#dcdcec"></i><i style="background:#c7c8e3"></i><i style="background:#8b88cf"></i><i style="background:#7469d3"></i><i style="background:#6223f1"></i><i style="background:#571ed7"></i><i style="background:#6759c9"></i><i style="background:#4a4583"></i></div>
+  <div class="ramp ramp-n"><i style="background:#f8f8fd"></i><i style="background:#f2f2f7"></i><i style="background:#eaeaef"></i><i style="background:#e3e4e9"></i><i style="background:#dddde2"></i><i style="background:#c9c9ce"></i><i style="background:#8f8f93"></i><i style="background:#77777c"></i><i style="background:#2d2d31"></i><i style="background:#212124"></i><i style="background:#69696e"></i><i style="background:#4c4c51"></i></div>
+
+  <div class="ui">
+    <nav>
+      <a class="on"><b></b>Overview</a>
+      <a><b></b>Traffic</a>
+    </nav>
+    <div class="acts">
+      <button class="primary">Save changes</button>
+      <button>Cancel</button>
+    </div>
+    <p class="body">Body text on the card, with <a href="#">a link that carries the hue</a> inside it.</p>
+    <div class="note"><span>i</span>A tinted callout at step 3, bordered at 6, text at 11.</div>
+  </div>
+
+  <footer>
+    <span>solid <code>#6223f1</code></span>
+    <span>6.53:1 on page</span>
+    <span>chroma 0.269</span>
+  </footer>
+</article>
+
+<article class="cand" style="--b1:#f8f8f9;--b2:#f2f2f4;--b3:#ebeaf0;--b4:#e4e3ee;--b5:#dedbec;--b6:#cbc7e3;--b7:#9385cf;--b8:#8065d4;--b9:#7826f3;--b10:#6b20db;--b11:#7454c9;--b12:#51447f;--n1:#f8f8fd;--n2:#f2f2f7;--n3:#ebeaef;--n4:#e4e3e9;--n5:#dddde2;--n6:#cac9ce;--n7:#8f8f93;--n8:#77777c;--n9:#2e2d31;--n10:#212124;--n11:#6a696d;--n12:#4d4c50;--ink:#ffffff;--surface:#ffffff"
+         data-dark="--b1:#101015;--b2:#191721;--b3:#211e31;--b4:#292340;--b5:#30274f;--b6:#392d60;--b7:#694eb5;--b8:#7f63d3;--b9:#792bf3;--b10:#8045f4;--b11:#8d7ad4;--b12:#ada7cf;--n1:#101013;--n2:#19181c;--n3:#202024;--n4:#27272a;--n5:#2d2d31;--n6:#353539;--n7:#616065;--n8:#76767a;--n9:#626166;--n10:#6d6c71;--n11:#88878c;--n12:#acabb0;--ink:#ffffff;--surface:#212121">
+  <header>
+    <h2>amethyst</h2>
+    <code>hue 292</code>
+    <p>warmest, edges toward purple</p>
+  </header>
+
+  <div class="ramp"><i style="background:#f8f8f9"></i><i style="background:#f2f2f4"></i><i style="background:#ebeaf0"></i><i style="background:#e4e3ee"></i><i style="background:#dedbec"></i><i style="background:#cbc7e3"></i><i style="background:#9385cf"></i><i style="background:#8065d4"></i><i style="background:#7826f3"></i><i style="background:#6b20db"></i><i style="background:#7454c9"></i><i style="background:#51447f"></i></div>
+  <div class="ramp ramp-n"><i style="background:#f8f8fd"></i><i style="background:#f2f2f7"></i><i style="background:#ebeaef"></i><i style="background:#e4e3e9"></i><i style="background:#dddde2"></i><i style="background:#cac9ce"></i><i style="background:#8f8f93"></i><i style="background:#77777c"></i><i style="background:#2e2d31"></i><i style="background:#212124"></i><i style="background:#6a696d"></i><i style="background:#4d4c50"></i></div>
+
+  <div class="ui">
+    <nav>
+      <a class="on"><b></b>Overview</a>
+      <a><b></b>Traffic</a>
+    </nav>
+    <div class="acts">
+      <button class="primary">Save changes</button>
+      <button>Cancel</button>
+    </div>
+    <p class="body">Body text on the card, with <a href="#">a link that carries the hue</a> inside it.</p>
+    <div class="note"><span>i</span>A tinted callout at step 3, bordered at 6, text at 11.</div>
+  </div>
+
+  <footer>
+    <span>solid <code>#7826f3</code></span>
+    <span>5.89:1 on page</span>
+    <span>chroma 0.269</span>
+  </footer>
+</article>
+  </div>
+</div>
+<script>
+  const btn = document.getElementById('mode');
+  const cands = [...document.querySelectorAll('.cand')];
+  // Stash the light values so the toggle can swap both ways.
+  cands.forEach((c) => { c.dataset.light = c.getAttribute('style'); });
+  btn.addEventListener('click', () => {
+    const dark = document.documentElement.classList.toggle('dark');
+    btn.textContent = dark ? 'Light' : 'Dark';
+    cands.forEach((c) => c.setAttribute('style', dark ? c.dataset.dark : c.dataset.light));
+  });
+</script>
+</body>
+</html>

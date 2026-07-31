@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>polychroma — the visual language</title>
+    <link rel="stylesheet" href="./palette.css" />
+    <style>
+      /* ══════════════════════════════════════════════════════════════════
+         THE VISUAL LANGUAGE. palette.css is generated and proven; this file
+         is the taste layer on top of it. Not one colour is written here.
+         ══════════════════════════════════════════════════════════════════ */
+
+      :root {
+        /* type — huge-and-thin against tiny-and-wide. The one thing carried
+           over from achroma, because it is the part that was actually yours. */
+        --display: clamp(3rem, 9vw, 7.5rem);
+        --h1: clamp(2rem, 4vw, 3rem);
+        --h2: 1.35rem;
+        --body: 1rem;
+        --small: 0.875rem;
+        --micro: 0.6875rem;
+
+        --thin: 200;
+        --light: 300;
+        --regular: 400;
+        --medium: 500;
+        --bold: 600;
+
+        --track-display: -0.04em;
+        --track-tight: -0.02em;
+        --track-wide: 0.16em;
+
+        /* space — 4px base */
+        --s1: 0.25rem; --s2: 0.5rem;  --s3: 0.75rem; --s4: 1rem;
+        --s5: 1.5rem; --s6: 2rem;     --s8: 3rem;    --s10: 4rem;
+        --s12: 6rem;  --s16: 8rem;
+
+        --r-sm: 6px; --r-md: 10px; --r-lg: 14px; --r-full: 999px;
+
+        --ease: cubic-bezier(0.22, 1, 0.36, 1);
+        --fast: 140ms; --mid: 260ms; --slow: 460ms;
+
+        /* elevation — black at alpha, never a tinted grey */
+        --lift-1: 0 1px 2px oklch(0 0 0 / 0.04);
+        --lift-2: 0 1px 2px oklch(0 0 0 / 0.035), 0 10px 26px -10px oklch(0 0 0 / 0.09);
+        --lift-3: 0 2px 4px oklch(0 0 0 / 0.04), 0 24px 56px -16px oklch(0 0 0 / 0.16);
+      }
+      .dark {
+        --lift-1: 0 1px 2px oklch(0 0 0 / 0.5);
+        --lift-2: 0 1px 2px oklch(0 0 0 / 0.45), 0 10px 26px -10px oklch(0 0 0 / 0.6);
+        --lift-3: 0 2px 4px oklch(0 0 0 / 0.5), 0 24px 56px -16px oklch(0 0 0 / 0.7);
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        background: var(--neutral-1);
+        color: var(--neutral-12);
+        font: var(--regular) var(--body)/1.65 ui-sans-serif, system-ui, -apple-system, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        transition: background var(--slow) var(--ease), color var(--slow) var(--ease);
+      }
+
+      /* Grain. Not a trend — it dithers the tinted ground so a large flat area of
+         chroma 0.007 cannot band on an 8-bit display. */
+      .grain {
+        position: fixed; inset: 0; z-index: 100; pointer-events: none; opacity: 0.055;
+        background-repeat: repeat; background-size: 180px 180px;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+      }
+
+      .wrap { max-width: 68rem; margin: 0 auto; padding: 0 var(--s5); }
+      section { padding: var(--s12) 0; border-top: 1px solid var(--neutral-6); }
+      section:first-of-type { border-top: 0; }
+
+      .label {
+        font: var(--medium) var(--micro)/1 ui-monospace, monospace;
+        letter-spacing: var(--track-wide); text-transform: uppercase;
+        color: var(--neutral-11); margin: 0 0 var(--s5);
+      }
+
+      /* ── hero ─────────────────────────────────────────────────────────── */
+      .hero { padding: var(--s16) 0 var(--s12); }
+      .hero h1 {
+        font-size: var(--display); font-weight: var(--thin);
+        letter-spacing: var(--track-display); line-height: 0.95;
+        margin: 0 0 var(--s5); text-wrap: balance;
+      }
+      /* The single most saturated thing on the page is one word. */
+      .hero em { font-style: normal; color: var(--brand-9); }
+      .hero p {
+        font-size: 1.15rem; color: var(--neutral-11); max-width: 34rem;
+        margin: 0 0 var(--s6); font-weight: var(--light);
+      }
+
+      /* ── type scale ───────────────────────────────────────────────────── */
+      .type > div { padding: var(--s4) 0; border-bottom: 1px solid var(--neutral-6); display: flex; gap: var(--s5); align-items: baseline; }
+      .type .n { flex: none; width: 5.5rem; font: var(--medium) var(--micro)/1 ui-monospace, monospace; letter-spacing: 0.1em; color: var(--neutral-11); text-transform: uppercase; }
+      .t-display { font-size: var(--display); font-weight: var(--thin); letter-spacing: var(--track-display); line-height: 1; }
+      .t-h1 { font-size: var(--h1); font-weight: var(--light); letter-spacing: var(--track-tight); }
+      .t-h2 { font-size: var(--h2); font-weight: var(--medium); letter-spacing: var(--track-tight); }
+      .t-body { font-size: var(--body); }
+      .t-small { font-size: var(--small); color: var(--neutral-11); }
+      .t-micro { font: var(--medium) var(--micro)/1 ui-monospace, monospace; letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--neutral-11); }
+
+      /* ── colour ───────────────────────────────────────────────────────── */
+      .steps, .scale { display: grid; grid-template-columns: 4.5rem repeat(12, 1fr); gap: 4px; }
+      .steps span { font: var(--micro)/1 ui-monospace, monospace; color: var(--neutral-11); text-align: center; padding-bottom: var(--s2); }
+      .scale { align-items: center; margin-bottom: 4px; }
+      .scale .n { font: var(--medium) var(--micro)/1 ui-monospace, monospace; color: var(--neutral-11); }
+      .scale i { display: block; height: 34px; border-radius: var(--r-sm); }
+
+      /* ── components ───────────────────────────────────────────────────── */
+      .card {
+        background: var(--surface); border: 1px solid var(--neutral-6);
+        border-radius: var(--r-lg); padding: var(--s5); box-shadow: var(--lift-2);
+      }
+      .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s4); }
+      .row { display: flex; gap: var(--s3); flex-wrap: wrap; align-items: center; }
+
+      .btn {
+        font: var(--regular) var(--small)/1 inherit; font-family: inherit;
+        padding: 0.75rem 1.15rem; border-radius: var(--r-md);
+        border: 1px solid var(--neutral-7); background: transparent;
+        color: var(--neutral-12); cursor: pointer;
+        transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease),
+                    box-shadow var(--fast) var(--ease), transform var(--fast) var(--ease);
+      }
+      .btn:hover { background: var(--neutral-3); transform: translateY(-1px); }
+      .btn:active { transform: translateY(0); }
+      .btn-primary {
+        background: var(--brand-9); border-color: var(--brand-9);
+        color: var(--brand-ink); font-weight: var(--medium); box-shadow: var(--lift-1);
+      }
+      .btn-primary:hover { background: var(--brand-10); border-color: var(--brand-10); box-shadow: var(--lift-2); }
+      .btn-soft { background: var(--brand-3); border-color: var(--brand-6); color: var(--brand-11); }
+      .btn-soft:hover { background: var(--brand-4); border-color: var(--brand-7); }
+      .btn-danger { background: var(--danger-9); border-color: var(--danger-9); color: var(--danger-ink); font-weight: var(--medium); }
+      .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+      .field { display: block; margin-bottom: var(--s4); }
+      .field span { display: block; font-size: 0.8rem; font-weight: var(--medium); color: var(--neutral-11); margin-bottom: var(--s2); }
+      .field input, .field select {
+        font: inherit; font-size: var(--small); width: 100%;
+        padding: 0.7rem 0.85rem; border-radius: var(--r-md);
+        border: 1px solid var(--neutral-7); background: var(--neutral-2); color: var(--neutral-12);
+        transition: border-color var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+      }
+      .field input:focus { outline: none; border-color: var(--brand-8); box-shadow: 0 0 0 3px var(--brand-4); }
+      .field input::placeholder { color: var(--neutral-11); }
+
+      .note { display: flex; gap: var(--s3); padding: 0.8rem 1rem; border-radius: var(--r-md); border: 1px solid; font-size: var(--small); margin-bottom: var(--s2); }
+      .note b { flex: none; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font: 700 11px/1 ui-monospace, monospace; }
+      .n-ok { background: var(--ok-3); border-color: var(--ok-6); color: var(--ok-11); }
+      .n-ok b { background: var(--ok-9); color: var(--ok-ink); }
+      .n-warn { background: var(--warn-3); border-color: var(--warn-6); color: var(--warn-11); }
+      .n-warn b { background: var(--warn-9); color: var(--warn-ink); }
+      .n-danger { background: var(--danger-3); border-color: var(--danger-6); color: var(--danger-11); }
+      .n-danger b { background: var(--danger-9); color: var(--danger-ink); }
+      .n-info { background: var(--info-3); border-color: var(--info-6); color: var(--info-11); }
+      .n-info b { background: var(--info-9); color: var(--info-ink); }
+
+      .chip { display: inline-flex; align-items: center; gap: var(--s1); font: var(--medium) 0.7rem/1 ui-sans-serif, system-ui, sans-serif; padding: 0.3rem 0.6rem; border-radius: var(--r-full); border: 1px solid var(--neutral-6); color: var(--neutral-11); }
+      .chip-brand { background: var(--brand-3); border-color: var(--brand-6); color: var(--brand-11); }
+
+      table { width: 100%; border-collapse: collapse; font-size: var(--small); }
+      th { text-align: left; font: var(--medium) var(--micro)/1 ui-monospace, monospace; letter-spacing: var(--track-wide); text-transform: uppercase; color: var(--neutral-11); padding: 0 0 var(--s3); border-bottom: 1px solid var(--neutral-7); }
+      td { padding: 0.8rem 0; border-bottom: 1px solid var(--neutral-6); color: var(--neutral-11); }
+      td:first-child { color: var(--neutral-12); font-weight: var(--medium); }
+      td.num { text-align: right; font-family: ui-monospace, monospace; font-variant-numeric: tabular-nums; color: var(--neutral-12); }
+
+      .meter { height: 5px; background: var(--neutral-4); border-radius: var(--r-full); overflow: hidden; }
+      .meter i { display: block; height: 100%; background: var(--brand-9); border-radius: inherit; transition: width var(--slow) var(--ease); }
+
+      /* ── motion demo ──────────────────────────────────────────────────── */
+      .lift-demo { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s4); }
+      .lift-demo > div { background: var(--surface); border: 1px solid var(--neutral-6); border-radius: var(--r-lg); padding: var(--s4); font-size: var(--small); transition: transform var(--mid) var(--ease), box-shadow var(--mid) var(--ease); }
+      .lift-demo > div:nth-child(1) { box-shadow: var(--lift-1); }
+      .lift-demo > div:nth-child(2) { box-shadow: var(--lift-2); }
+      .lift-demo > div:nth-child(3) { box-shadow: var(--lift-3); }
+      .lift-demo > div:hover { transform: translateY(-4px); box-shadow: var(--lift-3); }
+
+      /* ── dichromacy ───────────────────────────────────────────────────── */
+      .cvd { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s3); }
+      .cvd > div { border: 1px solid var(--neutral-6); border-radius: var(--r-md); padding: var(--s3); background: var(--surface); }
+      .cvd h4 { font: var(--medium) var(--micro)/1 ui-monospace, monospace; letter-spacing: 0.1em; text-transform: uppercase; color: var(--neutral-11); margin: 0 0 var(--s3); }
+      .chips { display: flex; gap: 5px; }
+      .chips i { display: block; flex: 1; height: 38px; border-radius: var(--r-sm); }
+      .cvd p { font-size: 0.72rem; color: var(--neutral-11); margin: var(--s3) 0 0; line-height: 1.45; }
+      .cvd p b { color: var(--danger-11); }
+      .f1 { filter: url(#p); } .f2 { filter: url(#d); } .f3 { filter: url(#t); }
+
+      .switch { position: fixed; top: var(--s4); right: var(--s5); z-index: 101; }
+      footer { padding: var(--s8) 0 var(--s12); color: var(--neutral-11); font-size: var(--small); }
+    </style>
+  </head>
+  <body>
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+      <filter id="p" color-interpolation-filters="linearRGB"><feColorMatrix type="matrix" values="0.152286 1.052583 -0.204868 0 0 0.114503 0.786281 0.099216 0 0 -0.003882 -0.048116 1.051998 0 0 0 0 0 1 0"/></filter>
+      <filter id="d" color-interpolation-filters="linearRGB"><feColorMatrix type="matrix" values="0.367322 0.860646 -0.227968 0 0 0.280085 0.672501 0.047413 0 0 -0.011820 0.042940 0.968881 0 0 0 0 0 1 0"/></filter>
+      <filter id="t" color-interpolation-filters="linearRGB"><feColorMatrix type="matrix" values="1.255528 -0.076749 -0.178779 0 0 -0.078411 0.930809 0.147602 0 0 0.004733 0.691367 0.303900 0 0 0 0 0 1 0"/></filter>
+    </svg>
+
+    <button class="btn switch" id="mode" type="button">Dark</button>
+    <div class="grain" aria-hidden="true"></div>
+
+    <div class="wrap">
+      <div class="hero">
+        <p class="label">polychroma · hue 285 · 476 assertions</p>
+        <h1>Colour that<br />can be <em>proven</em>.</h1>
+        <p>
+          One number in. A whole visual language out — solved against contrast
+          requirements, checked for gamut, and verified against three kinds of
+          colour blindness before it ever reached this page.
+        </p>
+        <div class="row">
+          <button class="btn btn-primary">Get started</button>
+          <button class="btn">Read the method</button>
+          <span class="chip chip-brand">v0.1</span>
+        </div>
+      </div>
+
+      <section>
+        <p class="label">Type — huge and thin against tiny and wide</p>
+        <div class="type">
+          <div><span class="n">display</span><span class="t-display">Aa</span></div>
+          <div><span class="n">h1</span><span class="t-h1">The quick brown fox</span></div>
+          <div><span class="n">h2</span><span class="t-h2">The quick brown fox jumps</span></div>
+          <div><span class="n">body</span><span class="t-body">The quick brown fox jumps over the lazy dog</span></div>
+          <div><span class="n">small</span><span class="t-small">The quick brown fox jumps over the lazy dog</span></div>
+          <div><span class="n">micro</span><span class="t-micro">The quick brown fox</span></div>
+        </div>
+      </section>
+
+      <section>
+        <p class="label">Colour — six scales, twelve solved steps each</p>
+        <div class="steps"><span></span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span><span>11</span><span>12</span></div>
+        <div id="scales"></div>
+      </section>
+
+      <section>
+        <p class="label">Components</p>
+        <div class="grid2">
+          <div class="card">
+            <p class="label" style="margin-bottom:var(--s4)">Actions</p>
+            <div class="row" style="margin-bottom:var(--s4)">
+              <button class="btn btn-primary">Primary</button>
+              <button class="btn btn-soft">Soft</button>
+              <button class="btn">Default</button>
+            </div>
+            <div class="row">
+              <button class="btn btn-danger">Delete</button>
+              <button class="btn" disabled>Disabled</button>
+            </div>
+            <div style="margin-top:var(--s5)">
+              <p class="label" style="margin-bottom:var(--s3)">Progress</p>
+              <div class="meter"><i style="width:68%"></i></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <p class="label" style="margin-bottom:var(--s4)">Inputs</p>
+            <label class="field"><span>Email</span><input type="text" placeholder="you@example.com" /></label>
+            <label class="field" style="margin-bottom:0"><span>Plan</span>
+              <select><option>Studio — £24/mo</option><option>Team — £96/mo</option></select>
+            </label>
+          </div>
+        </div>
+
+        <div class="grid2" style="margin-top:var(--s4)">
+          <div class="card">
+            <p class="label" style="margin-bottom:var(--s4)">Status — hue plus a glyph, always</p>
+            <div class="note n-ok"><b>✓</b><span>Deployed to production.</span></div>
+            <div class="note n-info"><b>i</b><span>Info carries no hue at all.</span></div>
+            <div class="note n-warn"><b>!</b><span>Certificate expires in 9 days.</span></div>
+            <div class="note n-danger" style="margin-bottom:0"><b>×</b><span>Build failed on step 4.</span></div>
+          </div>
+
+          <div class="card">
+            <p class="label" style="margin-bottom:var(--s4)">Data</p>
+            <table>
+              <thead><tr><th>Region</th><th>Status</th><th class="num">Revenue</th></tr></thead>
+              <tbody>
+                <tr><td>Europe</td><td><span class="chip chip-brand">Live</span></td><td class="num">£48,200</td></tr>
+                <tr><td>Americas</td><td><span class="chip chip-brand">Live</span></td><td class="num">£31,908</td></tr>
+                <tr><td>APAC</td><td><span class="chip">Pending</span></td><td class="num">£12,440</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <p class="label">Elevation — black at alpha, never a tinted grey. Hover them.</p>
+        <div class="lift-demo">
+          <div><b>Resting</b><br /><span style="color:var(--neutral-11)">A surface at rest.</span></div>
+          <div><b>Raised</b><br /><span style="color:var(--neutral-11)">A card, a popover.</span></div>
+          <div><b>Floating</b><br /><span style="color:var(--neutral-11)">A dialog, a palette.</span></div>
+        </div>
+      </section>
+
+      <section>
+        <p class="label">The assertion nobody else ships</p>
+        <div class="cvd" id="cvd"></div>
+      </section>
+
+      <footer>
+        Every value on this page comes from a solved token. Change the hue, re-solve,
+        and the whole language moves with it — still proven.
+      </footer>
+    </div>
+
+    <script type="module">
+      const FAM = ['neutral', 'brand', 'danger', 'warn', 'ok'];
+      document.getElementById('scales').innerHTML = FAM.map((f) =>
+        `<div class="scale"><span class="n">${f}</span>` +
+        Array.from({ length: 12 }, (_, i) => `<i style="background:var(--${f}-${i + 1})"></i>`).join('') +
+        `</div>`).join('');
+
+      const chips = ['danger', 'warn', 'ok', 'info'].map((s) => `<i style="background:var(--${s}-9)"></i>`).join('');
+      document.getElementById('cvd').innerHTML = [
+        ['normal vision', '', 'All four separate cleanly.'],
+        ['protanopia', 'f1', 'Holds — no pair falls below the floor.'],
+        ['deuteranopia', 'f2', '<b>warn and ok collapse at 0.033.</b> Amber and green are one colour here. The glyphs are carrying it, not the hue.'],
+        ['tritanopia', 'f3', 'Holds.'],
+      ].map(([n, c, v]) => `<div><h4>${n}</h4><div class="chips ${c}">${chips}</div><p>${v}</p></div>`).join('');
+
+      const btn = document.getElementById('mode');
+      btn.addEventListener('click', () => {
+        btn.textContent = document.documentElement.classList.toggle('dark') ? 'Light' : 'Dark';
+      });
+    </script>
+  </body>
+</html>

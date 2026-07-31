@@ -1,0 +1,139 @@
+/* nilam — base layer. Element defaults, and the hue leaks closed.
+ *
+ * Not a reset. normalize/preflight already exist and are better at it than anything I
+ * would write. This does the one thing a colour system has to do at the element level:
+ * stop the browser from painting a hue nobody chose.
+ *
+ * Every rule below started as a bug I found by screenshotting a page that had no colour
+ * in its stylesheet at all and still was not achromatic. The leaks, in the order I
+ * found them: link blue, focus-ring blue, ::selection blue, form-control accent blue,
+ * <mark> yellow, <hr> grey, spinner/progress blue, and — the one that took longest —
+ * the UA's own text-decoration colour on <a>, which is not `currentColor` by default.
+ */
+
+@layer nilam.base {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html {
+    /* 1.4.4 Resize Text: never set a px root size. */
+    -webkit-text-size-adjust: 100%;
+    /* Only ever tab-scroll to a heading that is not glued to the viewport edge. */
+    scroll-padding-block-start: 4rem;
+  }
+
+  body {
+    margin: 0;
+    background: var(--neutral-1);
+    color: var(--neutral-12);
+    font-family: var(--font-sans);
+    font-size: var(--text-1);
+    line-height: var(--leading-normal);
+    /* Antialiasing is a taste call, and on macOS the default is heavier than the
+       designs anyone draws. Kept because every reference interface I measured uses it. */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* LEAK 1: link blue. `color: inherit` alone is not enough — the UA also paints the
+     underline in its own blue, and text-decoration-color does not inherit from color
+     unless you say so. */
+  a {
+    color: inherit;
+    text-decoration-line: underline;
+    text-decoration-thickness: from-font;
+    text-decoration-color: var(--neutral-8);
+    text-underline-offset: 0.15em;
+    transition: text-decoration-color var(--dur-1) var(--ease-out);
+  }
+  a:hover { text-decoration-color: currentColor; }
+
+  /* LEAK 2: the focus ring. Two rules, not one. :focus-visible styles the ring the way
+     we want; the bare :focus reset removes the UA ring for mouse users. Doing only the
+     first leaves Safari drawing its own ring underneath ours. */
+  :focus { outline: none; }
+  :focus-visible {
+    outline: var(--ring-width) solid var(--brand-9);
+    outline-offset: var(--ring-offset);
+    /* A ring on a dark element against a dark page needs a gap it can be seen in. */
+    border-radius: inherit;
+  }
+
+  /* LEAK 3: selection. Uses the solid + its solved ink, so it is legible in both modes
+     rather than only the one the author happened to be looking at. */
+  ::selection {
+    background: var(--brand-9);
+    color: var(--brand-ink);
+  }
+
+  /* LEAK 4: form controls paint their checkmarks, ticks and thumbs in the OS accent. */
+  :where(input, select, textarea, button, progress, meter) { accent-color: var(--brand-9); }
+
+  /* LEAK 5: <mark> is UA yellow, which is a hue AND usually fails contrast. */
+  mark {
+    background: var(--warn-3);
+    color: var(--warn-12);
+    border-radius: var(--r-1);
+    padding-inline: 0.15em;
+  }
+
+  /* Controls do not inherit the page font unless told to — the oldest bug in CSS. */
+  button, input, select, textarea, optgroup { font: inherit; letter-spacing: inherit; }
+  button { color: inherit; }
+
+  code, kbd, samp, pre {
+    font-family: var(--font-mono);
+    /* 0.9375em not 0.875em: monospace faces run visually larger at the same size, and
+       0.875 made inline code read a step smaller than its surrounding text. */
+    font-size: 0.9375em;
+  }
+  pre { overflow-x: auto; }
+
+  hr {
+    border: 0;
+    border-block-start: var(--line-1) solid var(--neutral-6);
+    margin-block: var(--space-5);
+  }
+
+  /* Media should not be able to overflow its column. width:auto with the max-inline
+     keeps intrinsic sizing intact, which `width:100%` destroys for SVG. */
+  :where(img, svg, video, canvas, audio, iframe, embed, object) {
+    display: block;
+    max-inline-size: 100%;
+  }
+  :where(img, svg, video, canvas) { block-size: auto; }
+
+  /* Headings inherit; sizing them is the type scale's job, not the reset's. */
+  :where(h1, h2, h3, h4, h5, h6) {
+    margin: 0;
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-tight);
+    /* Optical tightening: large type at default tracking reads loose. */
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+  :where(p, ul, ol, dl, blockquote, figure, pre) { margin: 0; }
+  /* Stop a paragraph ending on a single orphaned word. */
+  :where(p, li) { text-wrap: pretty; }
+
+  :where(ul, ol) { padding-inline-start: 0; list-style: none; }
+
+  table { border-collapse: collapse; border-spacing: 0; }
+  :where(th, td) { text-align: start; }
+
+  /* [hidden] must beat any author display. Without !important, `.flex { display:flex }`
+     silently un-hides a hidden element — measured, in a real app, and the reason this
+     is the only !important in the package. */
+  [hidden] { display: none !important; }
+
+  /* Honour the OS setting. Not `animation: none`, which breaks JS that waits for
+     animationend; 0.01ms fires the event and shows no motion. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

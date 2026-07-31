@@ -1,0 +1,720 @@
+/* nilam — components.
+ *
+ * ── the scope, stated honestly ────────────────────────────────────────────────
+ *
+ * This does not compete with Radix or React Aria on breadth and it never will. React
+ * Aria is years of screen-reader, touch and IME work by a team; a stylesheet cannot
+ * contain that. What a stylesheet CAN do in 2026 is much more than it could in 2020,
+ * because the platform grew the hard parts:
+ *
+ *   <dialog>              modal, focus trap, Esc to close, inert background, ::backdrop
+ *   popover / popovertarget   top layer, light dismiss, Esc, implicit anchor reference
+ *   CSS anchor positioning    Baseline 2026 — tooltips and menus without Floating UI
+ *   <details name>        exclusive accordion, no JS at all
+ *   :has()                parent selectors, so a field can style itself from its input
+ *   field-sizing          textareas that grow, without a scroll-height listener
+ *
+ * So every overlay below is native. The dialog needs no focus-trap library, the menu
+ * needs no positioning library, the accordion needs no state. What is left for JS is
+ * genuinely stateful widgets — combobox, date picker, virtualised table — and those are
+ * deliberately absent rather than badly approximated. Use React Aria for them. Pairing
+ * is the honest recommendation, not a fallback.
+ *
+ * ── the rule every status component follows ───────────────────────────────────
+ *
+ * prove.mjs measures which status colours collapse under each dichromacy and, at hue
+ * 285, reports that danger/warn, danger/ok and warn/ok all become indistinguishable to
+ * a deuteranope. So every status component here carries a GLYPH as well as a hue, and
+ * proveStatusChannels() fails the build if one does not. WCAG 1.4.1 has required this
+ * for years; this is the first system I know of that enforces it.
+ */
+
+@layer nilam.components {
+  /* ── button ─────────────────────────────────────────────────────────────── */
+
+  .n-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    /* Padding is asymmetric on purpose: optical centring. Equal block padding on a
+       control with a cap-height-only label reads bottom-heavy. */
+    padding: 0.5rem 0.875rem;
+    border: var(--line-1) solid var(--neutral-7);
+    border-radius: var(--r-3);
+    background: transparent;
+    color: var(--neutral-12);
+    font-size: var(--text-1);
+    font-weight: var(--weight-medium);
+    line-height: 1;
+    /* 44px is the WCAG 2.5.8 target-size minimum. The control is 36px tall so it does
+       not look chunky, and the shortfall is made up by a transparent pseudo-element —
+       the pointer target is compliant while the painted box stays the size the design
+       wants. */
+    min-block-size: 2.25rem;
+    position: relative;
+    cursor: pointer;
+    text-decoration: none;
+    white-space: nowrap;
+    user-select: none;
+    transition:
+      background var(--dur-1) var(--ease-out),
+      border-color var(--dur-1) var(--ease-out),
+      box-shadow var(--dur-1) var(--ease-out);
+  }
+
+  /* The hit-target extension. ::after rather than padding, so layout is untouched. */
+  .n-btn::after {
+    content: '';
+    position: absolute;
+    inset: 50% 0 auto;
+    translate: 0 -50%;
+    block-size: max(100%, 2.75rem);
+  }
+
+  .n-btn:hover { background: var(--neutral-3); }
+  .n-btn:active { background: var(--neutral-4); }
+  .n-btn:disabled,
+  .n-btn[aria-disabled='true'] {
+    /* Not opacity. Fading a button fades its label too and drops it below 4.5:1 — the
+       most common accessibility bug in every component library I checked. Disabled state
+       is expressed with tokens that are still legible. */
+    background: var(--neutral-2);
+    border-color: var(--neutral-6);
+    color: var(--neutral-11);
+    cursor: not-allowed;
+  }
+
+  /* The brand moment. Step 9 flips polarity by mode and --brand-ink follows it, so this
+     one rule is a dark button with white text on a light page and a glowing light button
+     with dark text on a dark page. Writing `color: #fff` here would break dark mode. */
+  .n-btn-fill {
+    background: var(--brand-9);
+    border-color: transparent;
+    color: var(--brand-ink);
+    box-shadow: var(--shadow-1);
+  }
+  .n-btn-fill:hover { background: var(--brand-10); }
+  .n-btn-fill:active { background: var(--brand-10); box-shadow: none; }
+
+  .n-btn-ink {
+    background: var(--neutral-12);
+    border-color: transparent;
+    color: var(--neutral-1);
+  }
+  .n-btn-ink:hover { background: var(--neutral-11); }
+
+  .n-btn-ghost { border-color: transparent; }
+  .n-btn-ghost:hover { background: var(--neutral-3); }
+
+  .n-btn-danger {
+    background: var(--danger-9);
+    border-color: transparent;
+    color: var(--danger-ink);
+  }
+  .n-btn-danger:hover { background: var(--danger-10); }
+
+  .n-btn-sm { padding: 0.3125rem 0.625rem; font-size: var(--text-0); min-block-size: 1.75rem; }
+  .n-btn-lg { padding: 0.6875rem 1.125rem; font-size: var(--text-2); min-block-size: 2.75rem; }
+  .n-btn-icon { padding: 0; inline-size: 2.25rem; }
+  .n-btn-icon.n-btn-sm { inline-size: 1.75rem; }
+
+  /* Loading. aria-busy is the accessible signal; the spinner is the visible one. */
+  .n-btn[aria-busy='true'] { color: transparent; pointer-events: none; }
+  .n-btn[aria-busy='true']::before {
+    content: '';
+    position: absolute;
+    inline-size: 0.875rem;
+    block-size: 0.875rem;
+    border: var(--line-2) solid currentColor;
+    border-block-start-color: transparent;
+    border-radius: var(--r-full);
+    color: var(--brand-ink);
+    animation: n-spin 0.6s linear infinite;
+  }
+  .n-btn-fill[aria-busy='true']::before { color: var(--brand-ink); }
+  @keyframes n-spin { to { rotate: 360deg; } }
+
+  /* ── field ──────────────────────────────────────────────────────────────── */
+
+  .n-field { display: flex; flex-direction: column; gap: var(--space-1); }
+
+  .n-label {
+    font-size: var(--text-0);
+    font-weight: var(--weight-medium);
+    color: var(--neutral-12);
+  }
+  /* The required marker is a hue AND a glyph, and it is aria-hidden in markup because
+     the input's own `required` is what assistive tech should read. */
+  .n-label[data-required]::after {
+    content: ' *';
+    color: var(--danger-11);
+  }
+
+  .n-input,
+  .n-textarea,
+  .n-select {
+    inline-size: 100%;
+    padding: 0.5rem 0.6875rem;
+    border: var(--line-1) solid var(--neutral-7);
+    border-radius: var(--r-3);
+    background: var(--neutral-1);
+    color: var(--neutral-12);
+    font-size: var(--text-1);
+    min-block-size: 2.25rem;
+    transition: border-color var(--dur-1) var(--ease-out), box-shadow var(--dur-1) var(--ease-out);
+  }
+  .n-input::placeholder,
+  .n-textarea::placeholder {
+    /* Step 11, not a lighter grey. Placeholder text is text and 1.4.3 applies to it;
+       most systems ship placeholders around 2.5:1. */
+    color: var(--neutral-11);
+  }
+  .n-input:hover, .n-textarea:hover, .n-select:hover { border-color: var(--neutral-8); }
+  .n-input:focus-visible, .n-textarea:focus-visible, .n-select:focus-visible {
+    outline: none;
+    border-color: var(--brand-9);
+    /* Ring drawn as a shadow rather than an outline so it hugs the border radius and
+       does not clip inside a scroll container. */
+    box-shadow: 0 0 0 var(--ring-width) var(--brand-6);
+  }
+
+  /* Invalid, but only once the user has finished — :invalid alone paints an empty
+     required field red before it has been touched, which is hostile. user-invalid is
+     the correct selector and it is Baseline. */
+  .n-input:user-invalid, .n-textarea:user-invalid, .n-select:user-invalid {
+    border-color: var(--danger-8);
+  }
+  .n-input:user-invalid:focus-visible { box-shadow: 0 0 0 var(--ring-width) var(--danger-6); }
+
+  .n-textarea {
+    /* Grows with content where supported, and stays a normal resizable textarea where
+       not. Pure enhancement — nothing breaks without it. */
+    field-sizing: content;
+    min-block-size: 4.5rem;
+    line-height: var(--leading-normal);
+    resize: vertical;
+  }
+
+  /* The select arrow, drawn in currentColor so it follows the mode. A hard-coded SVG
+     fill is the usual approach and it is invisible in dark mode. */
+  .n-select {
+    appearance: none;
+    padding-inline-end: 2rem;
+    background-image:
+      linear-gradient(45deg, transparent 50%, currentColor 50%),
+      linear-gradient(135deg, currentColor 50%, transparent 50%);
+    background-position:
+      calc(100% - 1.125rem) calc(50% + 0.1em),
+      calc(100% - 0.75rem) calc(50% + 0.1em);
+    background-size: 0.375rem 0.375rem;
+    background-repeat: no-repeat;
+  }
+
+  /* Help and error text, wired with aria-describedby in markup. The error carries a
+     glyph because danger is one of the colours the prover says collapses. */
+  .n-hint { font-size: var(--text-00); color: var(--neutral-11); }
+  .n-error {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--text-00);
+    color: var(--danger-11);
+  }
+  .n-error::before { content: '⚠'; font-size: 0.9em; }
+
+  /* ── checkbox, radio, switch ─────────────────────────────────────────────── */
+
+  .n-check, .n-radio {
+    appearance: none;
+    flex: none;
+    inline-size: 1.125rem;
+    block-size: 1.125rem;
+    margin: 0;
+    border: var(--line-1) solid var(--neutral-7);
+    background: var(--neutral-1);
+    cursor: pointer;
+    display: grid;
+    place-content: center;
+    transition: background var(--dur-0) var(--ease-out), border-color var(--dur-0) var(--ease-out);
+  }
+  .n-check { border-radius: var(--r-1); }
+  .n-radio { border-radius: var(--r-full); }
+
+  .n-check::before {
+    content: '';
+    inline-size: 0.625rem;
+    block-size: 0.625rem;
+    background: var(--brand-ink);
+    clip-path: polygon(14% 44%, 0 65%, 43% 100%, 100% 16%, 85% 0, 41% 71%);
+    scale: 0;
+    transition: scale var(--dur-1) var(--ease-spring);
+  }
+  .n-radio::before {
+    content: '';
+    inline-size: 0.5rem;
+    block-size: 0.5rem;
+    border-radius: var(--r-full);
+    background: var(--brand-ink);
+    scale: 0;
+    transition: scale var(--dur-1) var(--ease-spring);
+  }
+  .n-check:checked, .n-radio:checked { background: var(--brand-9); border-color: var(--brand-9); }
+  .n-check:checked::before, .n-radio:checked::before { scale: 1; }
+
+  /* Indeterminate is a real tri-state and most libraries forget it. */
+  .n-check:indeterminate { background: var(--brand-9); border-color: var(--brand-9); }
+  .n-check:indeterminate::before {
+    clip-path: polygon(10% 40%, 90% 40%, 90% 60%, 10% 60%);
+    scale: 1;
+  }
+
+  .n-switch {
+    appearance: none;
+    flex: none;
+    inline-size: 2.25rem;
+    block-size: 1.25rem;
+    margin: 0;
+    border-radius: var(--r-full);
+    background: var(--neutral-6);
+    border: none;
+    cursor: pointer;
+    position: relative;
+    transition: background var(--dur-1) var(--ease-out);
+  }
+  .n-switch::before {
+    content: '';
+    position: absolute;
+    inset-block-start: 0.1875rem;
+    inset-inline-start: 0.1875rem;
+    inline-size: 0.875rem;
+    block-size: 0.875rem;
+    border-radius: var(--r-full);
+    background: var(--neutral-1);
+    box-shadow: var(--shadow-1);
+    transition: translate var(--dur-1) var(--ease-spring);
+  }
+  .n-switch:checked { background: var(--brand-9); }
+  .n-switch:checked::before { translate: 1rem 0; }
+
+  /* Label rows for all three. gap, not margin, so RTL works without overrides. */
+  .n-choice {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-1);
+    cursor: pointer;
+  }
+  /* :has() lets the row respond to its own input. Before this, every library needed a
+     wrapper class toggled by JS to do the same thing. */
+  .n-choice:has(:disabled) { color: var(--neutral-11); cursor: not-allowed; }
+
+  /* ── card ───────────────────────────────────────────────────────────────── */
+
+  .n-card {
+    /* --surface, not --neutral-1. In light mode the page is tinted and this is pure
+       white; the tint reads as light because the card beside it has none. */
+    background: var(--surface);
+    border: var(--line-1) solid var(--neutral-6);
+    border-radius: var(--r-5);
+    box-shadow: var(--shadow-1), var(--rim);
+  }
+  .n-card-pad { padding: var(--space-5); }
+  .n-card-float { box-shadow: var(--shadow-2), var(--rim); }
+  .n-card-link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    transition: box-shadow var(--dur-2) var(--ease-out), translate var(--dur-2) var(--ease-out);
+  }
+  .n-card-link:hover { box-shadow: var(--shadow-3), var(--rim); translate: 0 -2px; }
+
+  /* ── badge, chip ────────────────────────────────────────────────────────── */
+
+  .n-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3125rem;
+    padding: 0.1875rem 0.5rem;
+    border: var(--line-1) solid var(--neutral-6);
+    border-radius: var(--r-full);
+    background: var(--neutral-3);
+    color: var(--neutral-12);
+    font-size: var(--text-000);
+    font-weight: var(--weight-medium);
+    line-height: 1.4;
+    white-space: nowrap;
+  }
+  /* The glyph slot. Required on every status variant — see the header note. */
+  .n-badge-glyph {
+    flex: none;
+    inline-size: 0.875rem;
+    block-size: 0.875rem;
+    border-radius: var(--r-full);
+    display: grid;
+    place-items: center;
+    font-size: 0.5rem;
+    font-weight: var(--weight-bold);
+    font-family: var(--font-mono);
+  }
+
+  .n-badge-brand { background: var(--brand-3); border-color: var(--brand-6); color: var(--brand-11); }
+  .n-badge-brand .n-badge-glyph { background: var(--brand-9); color: var(--brand-ink); }
+  .n-badge-ok { background: var(--ok-3); border-color: var(--ok-6); color: var(--ok-11); }
+  .n-badge-ok .n-badge-glyph { background: var(--ok-9); color: var(--ok-ink); }
+  .n-badge-warn { background: var(--warn-3); border-color: var(--warn-6); color: var(--warn-11); }
+  .n-badge-warn .n-badge-glyph { background: var(--warn-9); color: var(--warn-ink); }
+  .n-badge-danger { background: var(--danger-3); border-color: var(--danger-6); color: var(--danger-11); }
+  .n-badge-danger .n-badge-glyph { background: var(--danger-9); color: var(--danger-ink); }
+  .n-badge-info { background: var(--info-3); border-color: var(--info-6); color: var(--info-11); }
+  .n-badge-info .n-badge-glyph { background: var(--info-9); color: var(--info-ink); }
+
+  /* ── note / alert ───────────────────────────────────────────────────────── */
+
+  .n-note {
+    display: flex;
+    gap: var(--space-3);
+    align-items: flex-start;
+    padding: var(--space-3) var(--space-4);
+    border: var(--line-1) solid var(--neutral-6);
+    border-radius: var(--r-4);
+    background: var(--neutral-2);
+    color: var(--neutral-12);
+    font-size: var(--text-0);
+  }
+  .n-note-glyph {
+    flex: none;
+    inline-size: 1.25rem;
+    block-size: 1.25rem;
+    border-radius: var(--r-full);
+    display: grid;
+    place-items: center;
+    font: var(--weight-bold) 0.75rem/1 var(--font-mono);
+    /* Optical alignment with the first line of body text rather than the box top. */
+    margin-block-start: 0.0625rem;
+  }
+  .n-note-title { font-weight: var(--weight-semibold); }
+  .n-note-ok { background: var(--ok-2); border-color: var(--ok-6); color: var(--ok-12); }
+  .n-note-ok .n-note-glyph { background: var(--ok-9); color: var(--ok-ink); }
+  .n-note-warn { background: var(--warn-2); border-color: var(--warn-6); color: var(--warn-12); }
+  .n-note-warn .n-note-glyph { background: var(--warn-9); color: var(--warn-ink); }
+  .n-note-danger { background: var(--danger-2); border-color: var(--danger-6); color: var(--danger-12); }
+  .n-note-danger .n-note-glyph { background: var(--danger-9); color: var(--danger-ink); }
+  .n-note-info { background: var(--info-2); border-color: var(--info-6); color: var(--info-12); }
+  .n-note-info .n-note-glyph { background: var(--info-9); color: var(--info-ink); }
+
+  /* ── table ──────────────────────────────────────────────────────────────── */
+
+  .n-table { inline-size: 100%; font-size: var(--text-0); }
+  .n-table th {
+    font: var(--weight-medium) var(--text-000) / 1 var(--font-mono);
+    letter-spacing: var(--tracking-micro);
+    text-transform: uppercase;
+    color: var(--neutral-11);
+    padding: 0 var(--space-3) var(--space-2) 0;
+    border-block-end: var(--line-1) solid var(--neutral-7);
+  }
+  .n-table td {
+    padding: var(--space-3) var(--space-3) var(--space-3) 0;
+    border-block-end: var(--line-1) solid var(--neutral-6);
+    color: var(--neutral-11);
+  }
+  .n-table td:last-child, .n-table th:last-child { padding-inline-end: 0; }
+  .n-table-key { color: var(--neutral-12); font-weight: var(--weight-medium); }
+  /* Tabular figures, so columns of numbers line up. Nothing else makes a table look
+     as unfinished as proportional digits. */
+  .n-table-num { text-align: end; font-variant-numeric: tabular-nums; color: var(--neutral-12); }
+  .n-table tbody tr:hover td { background: var(--neutral-2); }
+
+  /* Wrapper that scrolls a wide table without breaking the page. tabindex="0" in markup
+     makes it keyboard-scrollable, which is a real 2.1.1 requirement people miss. */
+  .n-table-scroll { overflow-x: auto; overscroll-behavior-x: contain; }
+
+  /* ── dialog: native, no focus-trap library ──────────────────────────────── */
+
+  .n-dialog {
+    padding: 0;
+    border: var(--line-1) solid var(--neutral-6);
+    border-radius: var(--r-6);
+    background: var(--surface);
+    color: var(--neutral-12);
+    box-shadow: var(--shadow-3), var(--rim);
+    inline-size: min(32rem, calc(100vw - 2rem));
+    max-block-size: calc(100dvh - 4rem);
+    /* The top layer already handles stacking, so no z-index. */
+    overflow: visible;
+  }
+  .n-dialog::backdrop {
+    background: var(--scrim);
+    backdrop-filter: blur(2px);
+  }
+  .n-dialog-head { padding: var(--space-5) var(--space-5) var(--space-3); }
+  .n-dialog-title { font-size: var(--text-3); }
+  .n-dialog-body { padding-inline: var(--space-5); overflow-y: auto; }
+  .n-dialog-foot {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-2);
+    padding: var(--space-4) var(--space-5) var(--space-5);
+  }
+
+  /* Enter and exit animation for an element that is display:none when closed. Needs all
+     three parts: allow-discrete to animate display at all, @starting-style for the
+     entry values, and overlay so it stays in the top layer while leaving. Miss any one
+     and the exit animation silently does not play. */
+  .n-dialog, .n-dialog::backdrop {
+    transition:
+      opacity var(--dur-2) var(--ease-out),
+      translate var(--dur-2) var(--ease-out),
+      display var(--dur-2) allow-discrete,
+      overlay var(--dur-2) allow-discrete;
+    opacity: 0;
+  }
+  .n-dialog { translate: 0 0.5rem; }
+  .n-dialog[open], .n-dialog[open]::backdrop { opacity: 1; }
+  .n-dialog[open] { translate: 0 0; }
+  @starting-style {
+    .n-dialog[open], .n-dialog[open]::backdrop { opacity: 0; }
+    .n-dialog[open] { translate: 0 0.5rem; }
+  }
+
+  /* ── popover, menu, tooltip: native top layer + CSS anchor positioning ──── */
+
+  .n-pop {
+    /* [popover] is display:none until shown, so this is the shown state. */
+    margin: 0;
+    padding: var(--space-2);
+    border: var(--line-1) solid var(--neutral-6);
+    border-radius: var(--r-4);
+    background: var(--surface);
+    color: var(--neutral-12);
+    box-shadow: var(--shadow-2), var(--rim);
+    inline-size: max-content;
+    max-inline-size: 18rem;
+
+    /* Anchored to its own invoker. A popover opened by popovertarget gets an IMPLICIT
+       anchor reference to the button that opened it, so no anchor-name is needed on the
+       trigger — this positions itself with no JS and no Floating UI. */
+    position-area: block-end span-inline-start;
+    position-try-fallbacks: flip-block, flip-inline;
+    margin-block-start: var(--space-1);
+  }
+  .n-pop:popover-open { opacity: 1; }
+  .n-pop {
+    opacity: 0;
+    transition:
+      opacity var(--dur-1) var(--ease-out),
+      display var(--dur-1) allow-discrete,
+      overlay var(--dur-1) allow-discrete;
+  }
+  @starting-style { .n-pop:popover-open { opacity: 0; } }
+
+  .n-menu { display: flex; flex-direction: column; gap: 1px; min-inline-size: 11rem; }
+  .n-menu-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border: none;
+    border-radius: var(--r-2);
+    background: transparent;
+    color: var(--neutral-12);
+    font-size: var(--text-0);
+    text-align: start;
+    text-decoration: none;
+    cursor: pointer;
+    inline-size: 100%;
+  }
+  .n-menu-item:hover, .n-menu-item:focus-visible { background: var(--neutral-3); outline: none; }
+  .n-menu-item-danger { color: var(--danger-11); }
+  .n-menu-item-danger:hover { background: var(--danger-3); }
+  .n-menu-sep { block-size: var(--line-1); background: var(--neutral-6); margin-block: var(--space-1); }
+
+  /* Tooltip. popover="hint" is the right type — it does not close other popovers and it
+     does not take focus. Falls back to a plain popover where hint is unsupported. */
+  .n-tip {
+    margin: 0;
+    padding: 0.3125rem var(--space-2);
+    border: none;
+    border-radius: var(--r-2);
+    background: var(--neutral-12);
+    color: var(--neutral-1);
+    font-size: var(--text-00);
+    inline-size: max-content;
+    max-inline-size: 16rem;
+    position-area: block-start;
+    position-try-fallbacks: flip-block;
+    margin-block-end: var(--space-1);
+  }
+
+  /* ── accordion: <details name> does the state, with no JS ────────────────── */
+
+  .n-accordion { border: var(--line-1) solid var(--neutral-6); border-radius: var(--r-4); overflow: hidden; }
+  .n-accordion > details + details { border-block-start: var(--line-1) solid var(--neutral-6); }
+  .n-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--text-1);
+    font-weight: var(--weight-medium);
+    cursor: pointer;
+    list-style: none;
+  }
+  .n-summary::-webkit-details-marker { display: none; }
+  .n-summary:hover { background: var(--neutral-2); }
+  .n-summary::after {
+    content: '';
+    flex: none;
+    inline-size: 0.5rem;
+    block-size: 0.5rem;
+    border-inline-end: var(--line-2) solid var(--neutral-11);
+    border-block-end: var(--line-2) solid var(--neutral-11);
+    rotate: 45deg;
+    transition: rotate var(--dur-1) var(--ease-out);
+  }
+  details[open] > .n-summary::after { rotate: -135deg; }
+  .n-accordion-body { padding: 0 var(--space-4) var(--space-4); font-size: var(--text-0); color: var(--neutral-11); }
+
+  /* ── tabs ───────────────────────────────────────────────────────────────── */
+
+  .n-tabs { display: flex; gap: var(--space-1); border-block-end: var(--line-1) solid var(--neutral-6); }
+  .n-tab {
+    padding: var(--space-2) var(--space-3);
+    border: none;
+    border-block-end: var(--line-2) solid transparent;
+    background: transparent;
+    color: var(--neutral-11);
+    font-size: var(--text-0);
+    font-weight: var(--weight-medium);
+    cursor: pointer;
+    margin-block-end: calc(-1 * var(--line-1));
+  }
+  .n-tab:hover { color: var(--neutral-12); }
+  /* aria-selected is the state, so the selector reads it rather than a class. If the
+     markup is not accessible the style does not apply — a useful forcing function. */
+  .n-tab[aria-selected='true'] { color: var(--brand-11); border-block-end-color: var(--brand-9); }
+
+  /* ── meter / progress ───────────────────────────────────────────────────── */
+
+  .n-meter {
+    block-size: 0.375rem;
+    border-radius: var(--r-full);
+    background: var(--neutral-4);
+    overflow: hidden;
+  }
+  .n-meter-fill {
+    block-size: 100%;
+    border-radius: inherit;
+    background: var(--brand-9);
+    transition: inline-size var(--dur-3) var(--ease-out);
+  }
+  .n-meter-ok .n-meter-fill { background: var(--ok-9); }
+  .n-meter-warn .n-meter-fill { background: var(--warn-9); }
+  .n-meter-danger .n-meter-fill { background: var(--danger-9); }
+
+  /* ── avatar ─────────────────────────────────────────────────────────────── */
+
+  .n-avatar {
+    inline-size: 2rem;
+    block-size: 2rem;
+    flex: none;
+    border-radius: var(--r-full);
+    background: var(--brand-3);
+    color: var(--brand-11);
+    display: grid;
+    place-items: center;
+    font-size: var(--text-00);
+    font-weight: var(--weight-semibold);
+    overflow: hidden;
+    user-select: none;
+  }
+  .n-avatar img { inline-size: 100%; block-size: 100%; object-fit: cover; }
+  .n-avatar-sm { inline-size: 1.5rem; block-size: 1.5rem; font-size: var(--text-000); }
+  .n-avatar-lg { inline-size: 3rem; block-size: 3rem; font-size: var(--text-1); }
+
+  /* ── skeleton ───────────────────────────────────────────────────────────── */
+
+  .n-skeleton {
+    background: linear-gradient(90deg, var(--neutral-3) 25%, var(--neutral-4) 50%, var(--neutral-3) 75%);
+    background-size: 200% 100%;
+    border-radius: var(--r-2);
+    animation: n-shimmer 1.4s ease-in-out infinite;
+  }
+  @keyframes n-shimmer { to { background-position: -200% 0; } }
+
+  /* ── link ───────────────────────────────────────────────────────────────── */
+
+  .n-link {
+    color: var(--brand-11);
+    text-decoration-line: underline;
+    text-decoration-color: var(--brand-8);
+    text-decoration-thickness: from-font;
+    text-underline-offset: 0.15em;
+  }
+  .n-link:hover { text-decoration-color: currentColor; }
+
+  /* ── layout ─────────────────────────────────────────────────────────────── */
+
+  .n-container { inline-size: 100%; max-inline-size: 72rem; margin-inline: auto; padding-inline: var(--space-4); }
+  .n-stack { display: flex; flex-direction: column; gap: var(--space-4); }
+  .n-cluster { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+  .n-divider { block-size: var(--line-1); background: var(--neutral-6); border: none; margin: 0; }
+
+  /* Prose. The one place headings get sized, because everywhere else the author decides. */
+  .n-prose { max-inline-size: var(--measure); }
+  .n-prose > * + * { margin-block-start: var(--space-4); }
+  .n-prose h2 { font-size: var(--text-4); margin-block-start: var(--space-6); }
+  .n-prose h3 { font-size: var(--text-3); margin-block-start: var(--space-5); }
+  .n-prose :where(ul, ol) { padding-inline-start: var(--space-5); }
+  .n-prose ul { list-style: disc; }
+  .n-prose ol { list-style: decimal; }
+  .n-prose li + li { margin-block-start: var(--space-2); }
+  .n-prose code {
+    background: var(--neutral-3);
+    border-radius: var(--r-1);
+    padding: 0.1em 0.3em;
+  }
+  .n-prose pre {
+    background: var(--neutral-2);
+    border: var(--line-1) solid var(--neutral-6);
+    border-radius: var(--r-4);
+    padding: var(--space-4);
+  }
+  .n-prose pre code { background: none; padding: 0; }
+  .n-prose blockquote {
+    border-inline-start: var(--line-2) solid var(--brand-8);
+    padding-inline-start: var(--space-4);
+    color: var(--neutral-11);
+  }
+
+  /* ── utilities that are genuinely load-bearing ──────────────────────────── */
+
+  /* The only correct visually-hidden. `display:none` removes it from the a11y tree and
+     `text-indent:-9999px` breaks RTL and gets read as a huge empty box. */
+  .n-sr-only {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+  /* Skip link: hidden until focused, then a real target. 2.4.1. */
+  .n-skip {
+    position: absolute;
+    inset-block-start: var(--space-2);
+    inset-inline-start: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--r-3);
+    background: var(--brand-9);
+    color: var(--brand-ink);
+    text-decoration: none;
+    translate: 0 -200%;
+  }
+  .n-skip:focus-visible { translate: 0 0; }
+}

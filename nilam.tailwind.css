@@ -182,5 +182,13 @@
 
   --ease-out: var(--ease-out);
   --ease-in-out: var(--ease-in-out);
+  --ease-spring: var(--ease-spring);
+
+  /* --color-scrim was missing, and a real app found it: nilam's scale defines --scrim
+     per mode (heavier in light, because dimming a bright page takes more than dimming a
+     dark one) and the bridge did not expose it, so `bg-scrim` did not exist and the app
+     had to declare the name itself in a local @theme block. A bridge that omits a token
+     the scale ships is a bridge with a hole in it. */
+  --color-scrim: var(--scrim);
 
 }

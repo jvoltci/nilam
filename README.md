@@ -52,9 +52,9 @@ violet with dark text on a dark page. One class. No `dark:` variant.
 
 ---
 
-## What is actually new here
+## What is new
 
-Two things, and I'd rather name them narrowly than oversell.
+Two things, stated narrowly.
 
 ### 1. Scales are solved, not picked
 
@@ -63,8 +63,8 @@ Step 11 is not "a grey that looks about right for body text" — it is the light
 which text hits 4.5:1 against step 3, computed. The contract *is* the construction, so
 a step cannot exist at a value that breaks it.
 
-Radix hand-tuned 30 scales over years and the result is genuinely beautiful. It is also
-unverifiable: nothing fails if step 11 drifts. Here, something fails.
+Hand-tuned scales are unverifiable by construction: nothing fails when a step drifts.
+Here, something fails.
 
 ### 2. It proves itself for colourblind readers
 
@@ -83,59 +83,48 @@ matrices, applied in linear sRGB) and measures the separation. Then:
 - That report becomes a **build failure** unless the collapsing components carry a
   non-hue channel. `proveStatusChannels()` enforces WCAG 1.4.1 instead of suggesting it.
 
-I searched for prior art on a machine-checked dichromat-separation assertion in a design
-system and found none. That's the claim, and it's a narrow one.
+No prior art was found for a machine-checked dichromat-separation assertion in a design
+system. That is the claim, and it is a narrow one.
 
 ---
 
-## What this is not
+## Limitations
 
-Some of what this table used to say is now closed. What is left is closed honestly:
+Stated plainly, because the package makes accessibility claims and those claims have
+boundaries.
 
-| | Status |
-|---|---|
-| Radix's **30 hand-tuned scales** | **Not a gap.** nilam *solves* scales — 30 of them is one loop over 30 hues, and each one is proven. Radix needed years because it was tuning by hand. |
-| M3's **cross-platform tokens / Figma** | **Closed.** DTCG export → Figma Variables, Style Dictionary, Swift, Kotlin. See [docs/tokens.md](docs/tokens.md). |
-| Radix's **keyboard semantics** | **Narrowed.** ARIA APG keyboard contracts for tabs, menu, combobox, slider, roving focus. See [docs/behaviours.md](docs/behaviours.md). |
-| React Aria's **screen-reader / touch / IME behaviour** | **Still open, and not closeable here.** The keyboard layer is spec-correct. It has never been run against NVDA, JAWS, VoiceOver or TalkBack, and real AT diverges from spec constantly. Only testing on the actual technology finds that. |
-| shadcn's **ecosystem** | **Not closeable.** Its value is that 50,000 developers use it. |
-| M3's **published research** | **Not closeable.** Needs participants. |
+**Contrast model.** WCAG 2.x contrast is a luminance ratio that ignores hue and chroma.
+Every floor here inherits that imprecision. APCA was drafted to address it but was removed
+from the normative WCAG 3 draft in July 2023, so WCAG 2.2 — now ISO/IEC 40500:2025 —
+remains the operative standard.
 
-**Where certified assistive-technology behaviour matters, pair nilam with
-[React Aria](https://react-spectrum.adobe.com/react-aria/).** That is the honest
-recommendation, not a fallback — it is years of work a stylesheet and a keyboard layer
-cannot contain.
+**Colour-vision simulation.** The Machado, Oliveira & Fernandes matrices are a model.
+Only severity 1.0 is simulated; real colour vision varies. The `0.09` separation floor is
+a chosen threshold, not a published one.
 
----
+**Assistive technology.** The keyboard layer implements the ARIA APG contracts. It has not
+been tested against NVDA, JAWS, VoiceOver or TalkBack, and real assistive technology
+diverges from specification. Where certified AT behaviour is a requirement, pair nilam with
+[React Aria](https://react-spectrum.adobe.com/react-aria/).
 
-## Honest limits
+**Meaning.** A prover measures separation, not appropriateness. An earlier revision
+optimised separation until `danger` resolved to magenta, with every assertion passing. The
+hue windows in `solve.mjs` exist because of it. This class of error is only visible by
+rendering.
 
-- **WCAG 2.x contrast maths is imperfect.** It's a luminance ratio that ignores hue
-  and chroma. That is the entire reason APCA was drafted. Every floor here inherits
-  that flaw. (APCA was *removed* from the normative WCAG 3 draft in July 2023, so
-  WCAG 2.2 — now ISO/IEC 40500:2025 — remains the operative standard.)
-- **The dichromacy matrices are a model, not ground truth.** Real colour vision varies
-  in severity; only severity 1.0 is simulated. The `0.09` separation floor is a number
-  I chose.
-- **A prover cannot see meaning.** An earlier version optimised separation so hard that
-  `danger` came out hot magenta — 476 green assertions and "Delete account" looked like
-  a fashion brand. The hue windows in `solve.mjs` exist because of it. This class of
-  bug is only visible by rendering.
-- **One number is not derived.** `GLOW_L = 0.66`, the dark-mode solid's lightness. I
-  tried four ways to derive it and none produce it; it's measured off two colours that
-  work. The file says so.
-- **sRGB only.** No P3 yet. Everything is gamut-clamped.
-- **n=1.** I built it and I use it. Nobody else has yet.
+**Gamut.** sRGB only. Display-P3 is not yet supported; all values are gamut-clamped.
+
+**One value is chosen, not derived.** `GLOW_L = 0.66`, the dark-mode solid's lightness.
+Four derivations were attempted and none produce it; it is measured from two reference
+colours. The source records this.
 
 ---
 
 ## Two brand moments
 
-The one design idea worth stealing even if you don't use the package.
-
 A filled button **inverts the polarity of the page it sits on**. On a light page it's a
-dark object with light text; on a dark page it's a light object with dark text. Material 3
-has said this for years and most systems still solve one value and use it in both modes.
+dark object with light text; on a dark page it's a light object with dark text. Material 3 has specified this for years; most systems still solve one value and use it in
+both modes.
 
 So step 9 differs by mode:
 
@@ -150,8 +139,8 @@ I'd been using for years (`#8b7cf6`, L 0.657) already sat. Those two are 48° ap
 and read as the same *kind* of colour. My first solver put its blues at L 0.500 and they
 all looked like highlighter ink. **Lightness was the variable, not hue.**
 
-Always pair step 9 with `--<family>-ink`. Hard-coding `color: white` on a filled button is
-the most common contrast bug I found in other systems.
+Always pair step 9 with `--<family>-ink`. A hard-coded `color: white` on a filled button is
+the most common contrast defect in comparable systems.
 
 ---
 

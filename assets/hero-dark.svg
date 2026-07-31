@@ -103,12 +103,12 @@
           font-family="ui-monospace, SFMono-Regular, Menlo, monospace"
           font-size="10" fill="#87878c">6</text>
     <rect x="860" y="430" width="56" height="34"
-          rx="8" fill="#5f51bb"/>
+          rx="8" fill="#685ebf"/>
     <text x="888" y="484" text-anchor="middle"
           font-family="ui-monospace, SFMono-Regular, Menlo, monospace"
           font-size="10" fill="#87878c">7</text>
     <rect x="920" y="430" width="56" height="34"
-          rx="8" fill="#7368d3"/>
+          rx="8" fill="#7d76d7"/>
     <text x="948" y="484" text-anchor="middle"
           font-family="ui-monospace, SFMono-Regular, Menlo, monospace"
           font-size="10" fill="#87878c">8</text>

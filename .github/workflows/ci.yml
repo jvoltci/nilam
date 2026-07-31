@@ -1,0 +1,177 @@
+# nilam — CI.
+#
+# The package's whole claim is that it proves itself. A proof that only runs when someone
+# remembers to type `npm test` is not a proof, it is a habit — so this runs the three
+# suites on every push and every pull request, and the branch is protectable on it.
+#
+# It also does the two things a local run cannot:
+#
+#   * REBUILDS and checks the working tree is unchanged. The emitted CSS is generated, so a
+#     solver change that nobody re-emitted leaves the repo's stylesheet describing a palette
+#     that no longer exists. Locally you would not notice; here the diff fails the job.
+#
+#   * PACKS AND INSTALLS the tarball into a scratch project and imports every export. 0.1.0
+#     shipped with nilam.tailwind.css missing from the tarball while exports pointed at it,
+#     and every on-disk assertion passed. This is the check that would have caught it before
+#     a consumer did.
+
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  prove:
+    name: prove (node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 18 is the floor declared in engines; 24 is what people actually run. Both, because
+        # the solver uses no polyfills and a syntax-level regression would only show on 18.
+        node: [18, 24]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      # No dependencies at all, runtime or dev — so there is nothing to install and nothing
+      # to cache. That is worth asserting rather than assuming.
+      - name: assert zero dependencies
+        run: |
+          node -e "
+            const p = require('./package.json');
+            const runtime = Object.keys(p.dependencies ?? {});
+            const dev = Object.keys(p.devDependencies ?? {});
+            if (runtime.length) { console.error('runtime dependencies appeared: ' + runtime); process.exit(1); }
+            if (dev.length) { console.error('devDependencies appeared: ' + dev + ' — CI assumes none, update this step deliberately'); process.exit(1); }
+            console.log('zero dependencies, as claimed');
+          "
+
+      - name: prove the palette
+        run: node test/prove.test.mjs
+
+      - name: prove the token export
+        run: node test/dtcg.test.mjs
+
+      - name: prove the keyboard contracts
+        run: node test/behaviours.test.mjs
+
+  generated-files-are-current:
+    name: generated files are current
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      # nilam.tokens.css, nilam.css and the hero SVGs are all generated. If a solver change
+      # lands without re-running the build, the repo ships a stylesheet describing a palette
+      # that no longer exists — and every assertion still passes, because they run against
+      # the freshly solved objects rather than the stale file.
+      - name: rebuild and diff
+        run: |
+          node build.mjs
+          node assets/hero.mjs
+          if ! git diff --quiet; then
+            echo "::error::Generated files are stale. Run \`npm run build && npm run hero\` and commit the result."
+            git --no-pager diff --stat
+            git --no-pager diff
+            exit 1
+          fi
+          echo "generated files match the solver"
+
+  tarball:
+    name: tarball installs and imports
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: build
+        run: node build.mjs
+
+      # The check that 0.1.0 needed and did not have. `npm pack` then install the tarball
+      # into a scratch project, exactly as a consumer would, and resolve every subpath in
+      # "exports". A file listed in exports but absent from the tarball fails HERE rather
+      # than in someone's app.
+      - name: pack, install, resolve every export
+        run: |
+          set -euo pipefail
+          npm pack --silent
+          TARBALL="$(ls nilam-*.tgz)"
+          mkdir -p /tmp/consumer && cd /tmp/consumer
+          npm init -y --silent > /dev/null
+          npm install --silent "$GITHUB_WORKSPACE/$TARBALL"
+          node -e "
+            const { createRequire } = require('node:module');
+            const req = createRequire('/tmp/consumer/');
+            const pkg = req('nilam/package.json');
+            let failed = 0;
+            for (const subpath of Object.keys(pkg.exports)) {
+              const spec = subpath === '.' ? 'nilam' : 'nilam/' + subpath.replace(/^\.\//, '');
+              try { req.resolve(spec); console.log('ok    ' + spec); }
+              catch (e) { console.error('BROKEN ' + spec + ' -> ' + e.message); failed++; }
+            }
+            if (failed) { console.error(failed + ' export(s) unresolvable from an installed tarball'); process.exit(1); }
+            console.log('all ' + Object.keys(pkg.exports).length + ' exports resolve from a real install');
+          "
+
+      # The JS entry point has to actually execute from the installed package, not merely
+      # resolve — a bad relative import inside src/ resolves fine and throws on import.
+      - name: solve and prove from the installed package
+        run: |
+          cd /tmp/consumer
+          node --input-type=module -e "
+            import { solvePalette, prove, toCss, toDtcg, NILAM_HUE } from 'nilam';
+            const palette = solvePalette(NILAM_HUE);
+            const { count, failures } = prove(palette);
+            if (failures.length) { console.error(failures.join('\n')); process.exit(1); }
+            if (!toCss(palette).includes('light-dark(')) { console.error('toCss emitted no light-dark()'); process.exit(1); }
+            if (!toDtcg(palette)) { console.error('toDtcg returned nothing'); process.exit(1); }
+            console.log(count + ' assertions pass from an installed copy');
+          "
+
+  css-is-valid:
+    name: stylesheets parse
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      # The assertions measure numbers; none of them can tell whether a parser ACCEPTS the
+      # file. A stray brace makes every rule after it vanish, and the palette still measures
+      # perfect because the assertions read the solver's objects, not the stylesheet.
+      #
+      # lightningcss is a strict parser and errors rather than skipping, which is the whole
+      # point. It runs via npx so nothing enters devDependencies — CI asserts there are none.
+      #
+      # What this does NOT catch: @theme nested inside @layer, which is valid CSS and invalid
+      # Tailwind. That one is semantic, it bit the bridge once, and only a real Tailwind build
+      # would catch it. Named here so the gap is known rather than assumed covered.
+      - name: parse every stylesheet
+        run: |
+          set -euo pipefail
+          node build.mjs
+          for f in nilam*.css; do
+            echo "-- $f"
+            npx --yes lightningcss-cli@1 "$f" -o /dev/null
+          done
+          echo "all stylesheets parsed"

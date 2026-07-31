@@ -1,0 +1,141 @@
+# nilam — visual regression.
+#
+# ci.yml proves the numbers. This proves the rendering, which is the gap the README's
+# Limitations section admits in as many words:
+#
+#   "A prover measures separation, not appropriateness. An earlier revision optimised
+#    separation until `danger` resolved to magenta, with every assertion passing. […] This
+#    class of error is only visible by rendering."
+#
+# Three real defects from this project's history are the specification. A `warn` that solved
+# to a dark olive-gold and read as a fashion brand; a busy-button spinner drawn in
+# --brand-ink, which is near-white, and therefore invisible on a ghost button; a `.n-summary`
+# laid out with `justify-content: space-between`, which spread one sentence of question text
+# across a whole card. Not one of them moved a number. Each was found by a human looking at
+# a screenshot, and a human only finds each of them once.
+#
+# ── the cross-platform problem, and what is done about it ────────────────────────────
+#
+# Baselines captured on macOS do not match Ubuntu and never will. It is not anti-aliasing
+# jitter that a threshold could absorb: the two systems do not have the same fonts, so text
+# wraps at different words, blocks land at different heights and every subsequent pixel is
+# somewhere else. A tolerance loose enough to pass that is far looser than the 4% a filled
+# button turning red produces — which is to say it would pass the regression too, and the
+# suite would be theatre.
+#
+# Of the three ways out, this takes the second and third together:
+#
+#   * a generous threshold — REJECTED, for the reason above.
+#
+#   * gate to one platform — TAKEN. Baselines live in a directory named after
+#     `process.platform`: test/visual/baselines/darwin, test/visual/baselines/linux. Each
+#     machine compares against its own set and never against another's.
+#
+#   * generate the baselines in CI — TAKEN, but only as a bootstrap, and deliberately not as
+#     the gate. A baseline nobody has looked at is worse than no baseline: it locks whatever
+#     was on screen in, bug included, and every future run then certifies the bug. A machine
+#     cannot do the looking. So when test/visual/baselines/linux/ is empty this job captures,
+#     uploads the images as an artefact, annotates the run with what to do, and passes on the
+#     determinism assertions alone. Download the artefact, look at all 31 images, commit
+#     them, and from that commit on the job gates for real. No edit to this file is needed
+#     for the switch — the presence of the PNGs IS the switch.
+#
+# Until those PNGs are committed, this workflow does NOT catch a visual regression on Linux.
+# That is stated here rather than papered over.
+#
+# What it proves from the first run, with no baselines at all:
+#
+#   * DETERMINISM. Every page is captured three times and the diffs must be zero. This is
+#     the property the whole harness rests on, it is the one most likely to break (nilam has
+#     five infinite animations and exempts the loaders from prefers-reduced-motion on
+#     purpose), and it needs nothing committed to check.
+#   * That every capture still fits inside its frame, so nothing is being silently cropped.
+#   * That the crops still match the showcase they are extracted from.
+
+name: visual
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: visual-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  render:
+    name: render and compare (linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      # Same as ci.yml. There is nothing to install: the PNG decoder, the encoder and the
+      # pixel comparison are all written against node:zlib, so this suite adds no dependency
+      # and no npx download either.
+      - name: assert zero dependencies
+        run: |
+          node -e "
+            const p = require('./package.json');
+            const runtime = Object.keys(p.dependencies ?? {});
+            const dev = Object.keys(p.devDependencies ?? {});
+            if (runtime.length || dev.length) {
+              console.error('dependencies appeared: ' + [...runtime, ...dev]);
+              process.exit(1);
+            }
+            console.log('zero dependencies, as claimed');
+          "
+
+      # Preinstalled on the ubuntu-latest image. Printed rather than assumed, because the
+      # version is part of what a baseline is a baseline OF — a Chrome that changes its text
+      # rasteriser will move every glyph edge, and then the log says why.
+      - name: which Chrome
+        run: |
+          which google-chrome
+          google-chrome --version
+
+      # The stylesheet the demo imports is generated. Capturing a stale nilam.css would
+      # produce a screenshot of a palette the solver no longer emits.
+      - name: build
+        run: node build.mjs
+
+      # 31 captures × 3 for the determinism check, one Chrome process each. A fresh process
+      # per shot cannot carry a stuck compositor or a leftover popover into the next one.
+      - name: capture, prove determinism, compare
+        run: node test/visual.test.mjs --determinism
+
+      # On failure: the diff images, which are the entire point of uploading anything. Red
+      # marks the pixels that moved, magenta marks a region only one of the two images
+      # covers, and the faded baseline underneath keeps it legible. A reviewer can see what
+      # changed instead of reading a percentage.
+      - name: upload diffs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-diffs-linux
+          path: |
+            test/visual/out/diff/
+            test/visual/out/current/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      # On success: the captures, always. When the linux baselines do not exist yet this is
+      # the artefact to download, inspect and commit. When they do exist it is still worth
+      # having — it is what you diff by eye when the numbers say "within tolerance" and you
+      # want to be sure.
+      - name: upload captures
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-captures-linux
+          path: test/visual/out/current/
+          if-no-files-found: error
+          retention-days: 14

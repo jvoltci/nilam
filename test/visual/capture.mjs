@@ -2,7 +2,7 @@
  *
  * ── what this is for ─────────────────────────────────────────────────────────
  *
- * The README's Limitations section names one class of defect the 7,064 assertions
+ * The README's Limitations section names one class of defect the numeric assertions
  * structurally cannot see:
  *
  *   "A prover measures separation, not appropriateness. An earlier revision optimised
@@ -19,7 +19,7 @@
  * ── determinism, which is the whole job ──────────────────────────────────────
  *
  * A flaky harness is worse than none: it trains people to re-run until green, and then it
- * catches nothing. Five things had to be neutralised.
+ * catches nothing. Six things had to be neutralised.
  *
  * 1. ANIMATION. nilam has five infinite animations — n-spin, n-slide, n-pulse, n-shimmer
  *    and n-breathe. The obvious move is Chrome's `--force-prefers-reduced-motion`, and it
@@ -65,12 +65,16 @@
  * 5. SCROLLBARS. `--hide-scrollbars`. .n-table-scroll and .n-listbox both scroll, and an
  *    overlay scrollbar fades on a timer.
  *
+ * 6. A DEFERRED SCRIPT. demo/index.html builds the scale strips and the colour-blindness
+ *    cards in a `<script type="module">`, which is deferred, and it had sometimes not run
+ *    yet. Found by measurement, not by thinking — see the long note above INIT_JS.
+ *
  * Verified by capturing every page three times and requiring a zero-pixel diff; that is
  * an assertion in test/visual.test.mjs, not a claim in a comment.
  *
  * ── why the pages are generated ───────────────────────────────────────────────
  *
- * A single 1280×5400 diff of the whole showcase tells you "something changed somewhere",
+ * A single 1280×5200 diff of the whole showcase tells you "something changed somewhere",
  * which is nearly useless. So most captures are one component group, rendered on its own
  * page at its own viewport. The markup is EXTRACTED from demo/index.html rather than
  * copied, so the showcase stays the single source of truth and a crop cannot silently
@@ -83,9 +87,7 @@
 
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:http';
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync, rmSync, existsSync } from 'node:fs';
-import { createReadStream } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, readFileSync, writeFileSync, createReadStream, existsSync } from 'node:fs';
 import { join, dirname, extname, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -138,47 +140,70 @@ const FREEZE_CSS = `<style id="n-visual-freeze">
 
 /* ── the injected script ──────────────────────────────────────────────────────
  *
- * Classic, not a module, so it runs during parse and pins the very first frame.
+ * Classic, not a module, so it runs during PARSE and pins the very first frame.
  *
- * The `data-visual-fragment` branch mirrors demo/index.html's own init for the generated
- * one-section pages, which do not carry the demo's module script. It is a hand-kept copy
- * of three statements — if the demo grows a fourth, this needs it too, and the assertion
- * suite greps the demo for the ids to make that loud rather than silent. */
+ * ── why it re-does the demo's own init ───────────────────────────────────────
+ *
+ * demo/index.html builds three things from script: the six scale strips, the four
+ * colour-blindness cards, and one indeterminate checkbox. It does that in a
+ * `<script type="module">`, and a module script is deferred.
+ *
+ * That is a race, and it was measured rather than theorised. Asking Chrome for the page
+ * height eight times in a row returned 4157 five times and 4547 three times — a 390px
+ * spread, which is exactly the height of the six scale strips plus the cards. Sometimes
+ * the module had run and sometimes it had not. The screenshot path turns out to wait for
+ * the load event where --dump-dom does not, so the images themselves never varied; but
+ * "the images happen not to vary today" is not a property to build a baseline on.
+ *
+ * So this classic script builds all three synchronously, and it runs for the showcase as
+ * well as for the generated crops. If the demo's module then runs, it overwrites with its
+ * own markup, and that is fine: capturing the showcase with the module DELETED and this
+ * mirror in its place produces a byte-identical 1280×5200 PNG — 0 pixels different — so
+ * whichever of the two wins the race, the screenshot is the same.
+ *
+ * The cost is a hand-kept copy of the demo's three statements. MIRRORED below records
+ * what it assumes, and test/visual.test.mjs asserts the demo still says the same thing,
+ * so a family added to the demo and not here fails loudly instead of quietly capturing a
+ * page that no longer matches the showcase. */
+export const MIRRORED = {
+  families: ['neutral', 'brand', 'danger', 'warn', 'ok', 'info'],
+  ids: ['scales', 'cvd', 'ind', 'dialog', 'mode'],
+  vision: ['normal vision', 'protanopia', 'deuteranopia', 'tritanopia'],
+};
+
 const INIT_JS = `<script id="n-visual-init">
 (function () {
   var FREEZE_MS = ${FREEZE_MS};
   var root = document.documentElement;
 
-  if (document.body.hasAttribute('data-visual-fragment')) {
-    var FAMILIES = ['neutral', 'brand', 'danger', 'warn', 'ok', 'info'];
-    var scales = document.getElementById('scales');
-    if (scales) {
-      scales.innerHTML = FAMILIES.map(function (f) {
-        var cells = '';
-        for (var i = 1; i <= 12; i++) cells += '<i style="background:var(--' + f + '-' + i + ')"></i>';
-        return '<div class="scale"><span>' + f + '</span>' + cells + '</div>';
-      }).join('');
-    }
-    var cvd = document.getElementById('cvd');
-    if (cvd) {
-      var STATUS = [['danger', '\\u00d7'], ['warn', '!'], ['ok', '\\u2713'], ['info', 'i']];
-      var chips = STATUS.map(function (s) {
-        return '<i style="background:var(--' + s[0] + '-9);color:var(--' + s[0] + '-ink)">' + s[1] + '</i>';
-      }).join('');
-      cvd.innerHTML = [
-        ['normal vision', '', 'All four separate cleanly.'],
-        ['protanopia', 'f-prot', '<b>warn/ok collapse.</b> The glyphs are carrying it.'],
-        ['deuteranopia', 'f-deut', '<b>all three status pairs collapse.</b> Red and green are one colour here. No hue assignment fixes this.'],
-        ['tritanopia', 'f-trit', 'Holds. Every pair stays above the floor.']
-      ].map(function (r) {
-        return '<div class="n-card n-card-pad"><p class="lbl">' + r[0] + '</p>' +
-               '<div class="chips ' + r[1] + '">' + chips + '</div>' +
-               '<p class="verdict">' + r[2] + '</p></div>';
-      }).join('');
-    }
-    var ind = document.getElementById('ind');
-    if (ind) ind.indeterminate = true;
+  var FAMILIES = ${JSON.stringify(MIRRORED.families)};
+  var scales = document.getElementById('scales');
+  if (scales) {
+    scales.innerHTML = FAMILIES.map(function (f) {
+      var cells = '';
+      for (var i = 1; i <= 12; i++) cells += '<i style="background:var(--' + f + '-' + i + ')"></i>';
+      return '<div class="scale"><span>' + f + '</span>' + cells + '</div>';
+    }).join('');
   }
+  var cvd = document.getElementById('cvd');
+  if (cvd) {
+    var STATUS = [['danger', '\\u00d7'], ['warn', '!'], ['ok', '\\u2713'], ['info', 'i']];
+    var chips = STATUS.map(function (s) {
+      return '<i style="background:var(--' + s[0] + '-9);color:var(--' + s[0] + '-ink)">' + s[1] + '</i>';
+    }).join('');
+    cvd.innerHTML = [
+      ['normal vision', '', 'All four separate cleanly.'],
+      ['protanopia', 'f-prot', '<b>warn/ok collapse.</b> The glyphs are carrying it.'],
+      ['deuteranopia', 'f-deut', '<b>all three status pairs collapse.</b> Red and green are one colour here. No hue assignment fixes this.'],
+      ['tritanopia', 'f-trit', 'Holds. Every pair stays above the floor.']
+    ].map(function (r) {
+      return '<div class="n-card n-card-pad"><p class="lbl">' + r[0] + '</p>' +
+             '<div class="chips ' + r[1] + '">' + chips + '</div>' +
+             '<p class="verdict">' + r[2] + '</p></div>';
+    }).join('');
+  }
+  var ind = document.getElementById('ind');
+  if (ind) ind.indeterminate = true;
 
   /* The demo only rewrites this label on click, and we set the mode by class rather than
      by clicking, so it would otherwise read "Dark" on a dark page. */
@@ -310,25 +335,37 @@ const WIDGETS_FRAGMENT = `
  *
  * `node test/visual/capture.mjs --measure` prints the measured heights when adding one. */
 const SECTION_SPECS = [
-  // name          section heading in demo/index.html   w     h    notes
-  ['signature',    'The signature',                    980,  520],
-  ['cvd',          'The assertion nobody else ships',  980,  520],
-  ['scales',       'The solved scales',                980,  520],
-  ['buttons',      'Buttons',                          980,  260],
+  // name          section heading in demo/index.html   w     h
+  ['signature',    'The signature',                    980,  640],
+  ['cvd',          'The assertion nobody else ships',  980,  440],
+  ['scales',       'The solved scales',                980,  440],
+  ['buttons',      'Buttons',                          980,  230],
   ['forms',        'Forms',                            980,  620],
-  ['status',       'Status',                           980,  520],
-  ['disclosure',   'Disclosure and tabs',              980,  520],
-  ['table',        'Table',                            980,  460],
-  ['loaders',      'Loading',                          980,  620],
+  ['status',       'Status',                           980,  450],
+  ['disclosure',   'Disclosure and tabs',              980,  450],
+  ['table',        'Table',                            980,  490],
+  ['loaders',      'Loading',                          980,  580],
 ];
+
+/* Below this, --window-size no longer sets the layout width: Chrome clamps the layout to
+ * 500px and the screenshot is a crop of it. Asserted in test/visual.test.mjs. */
+export const MIN_LAYOUT_WIDTH = 500;
 
 export const SPECS = [];
 for (const mode of ['light', 'dark']) {
   // The whole page, both modes. Catches anything that moves a section relative to another.
-  SPECS.push({ name: `showcase-${mode}`, page: 'showcase', mode, w: 1280, h: 5000 });
-  // 390 is an iPhone 15 viewport. Every grid here is auto-fit, so this is where a
-  // one-column collapse either happens or does not.
-  SPECS.push({ name: `showcase-mobile-${mode}`, page: 'showcase', mode, w: 390, h: 8200 });
+  SPECS.push({ name: `showcase-${mode}`, page: 'showcase', mode, w: 1280, h: 5200 });
+  /* Narrow, which is where every `auto-fit, minmax(19rem, 1fr)` grid either collapses to
+   * one column or does not.
+   *
+   * 520 and not 390, and this was a bug in the harness before it was a number in a list.
+   * Headless Chrome on macOS will not lay out narrower than 500px: `--window-size=390`
+   * gives a 390px SCREENSHOT of a 500px-wide LAYOUT, so the right 110px is silently
+   * guillotined. The first baseline generated at 390 looked plausible and was showing
+   * cards with their right-hand border cut off. Measured: 320, 390, 450 and 480 all report
+   * documentElement.clientWidth === 500; 520 reports 520. MIN_LAYOUT_WIDTH below asserts
+   * nobody re-adds a narrower one. */
+  SPECS.push({ name: `showcase-narrow-${mode}`, page: 'showcase', mode, w: 520, h: 6200 });
 
   for (const [name, heading, w, h] of SECTION_SPECS) {
     SPECS.push({ name: `${name}-${mode}`, page: `section:${heading}`, mode, w, h });
@@ -340,14 +377,14 @@ for (const mode of ['light', 'dark']) {
     SPECS.push({ name: `overlay-${open}-${mode}`, page: 'section:Overlays', mode, w: 980, h: 560, open });
   }
 
-  SPECS.push({ name: `widgets-${mode}`, page: 'widgets', mode, w: 980, h: 420 });
+  SPECS.push({ name: `widgets-${mode}`, page: 'widgets', mode, w: 980, h: 540 });
 }
 
 /* The loader exemption itself, asserted visually. Under reduced motion the spinner must
  * close its ring (border-block-start-color goes to --brand-9) and the travelling bar must
  * become a full-width pulse. If someone ever "fixes" the exemption by deleting it, every
  * numeric assertion stays green and this capture changes. */
-SPECS.push({ name: 'loaders-reduced-motion-light', page: 'section:Loading', mode: 'light', w: 980, h: 620, reducedMotion: true });
+SPECS.push({ name: 'loaders-reduced-motion-light', page: 'section:Loading', mode: 'light', w: 980, h: 580, reducedMotion: true });
 
 /* ── page assembly ───────────────────────────────────────────────────────────── */
 
@@ -454,7 +491,6 @@ function serve(pagesDir) {
  * a leftover popover — from the previous shot into this one. Twenty minutes of debugging a
  * "flaky" harness costs more than the whole run does. */
 function shoot(binary, url, out, { w, h, reducedMotion }) {
-  const profile = mkdtempSync(join(tmpdir(), 'nilam-visual-'));
   const args = [
     '--headless=new',
     '--disable-gpu',                       // software rasterisation: identical every run
@@ -463,15 +499,20 @@ function shoot(binary, url, out, { w, h, reducedMotion }) {
     `--window-size=${w},${h}`,
     `--screenshot=${out}`,
     '--virtual-time-budget=2000',          // run every timer to completion, instantly
-    `--user-data-dir=${profile}`,          // no profile state, ever
     '--no-first-run',
     '--no-default-browser-check',
     '--disable-extensions',
-    '--force-color-profile=srgb',           // nilam is sRGB-only; do not let the display decide
-    '--disable-lcd-text',                   // greyscale AA, so subpixel order cannot vary
-    '--font-render-hinting=none',           // hinting differs by fontconfig; this removes it
-    '--no-sandbox',                          // required in most CI containers, harmless locally
+    '--force-color-profile=srgb',          // nilam is sRGB-only; do not let the display decide
+    '--disable-lcd-text',                  // greyscale AA, so subpixel order cannot vary
+    '--font-render-hinting=none',          // hinting differs by fontconfig; this removes it
+    '--no-sandbox',                        // required in most CI containers, harmless locally
     '--disable-dev-shm-usage',
+    /* NOT --user-data-dir. A throwaway profile per shot would be the obvious hygiene
+     * measure and on this machine it makes Chrome 150 hang for ever, on any page size,
+     * whether the directory is under /var/folders or /tmp, new or reused. Measured, not
+     * guessed: with the flag every capture times out; without it every capture finishes in
+     * under three seconds. Nothing about determinism depends on it — these pages set no
+     * cookie, touch no storage, and the capture server sends `cache-control: no-store`. */
   ];
   if (reducedMotion) args.push('--force-prefers-reduced-motion');
   args.push(url);
@@ -480,10 +521,14 @@ function shoot(binary, url, out, { w, h, reducedMotion }) {
     const child = spawn(binary, args, { stdio: ['ignore', 'ignore', 'pipe'] });
     let stderr = '';
     child.stderr.on('data', (d) => { stderr += d; });
+    /* A hang has to fail, not wait. Headless Chrome occasionally does not exit, and
+     * without this the whole CI job sits at the step timeout with no message. */
+    const timer = setTimeout(() => { child.kill('SIGKILL'); }, 60_000);
     child.on('error', reject);
-    child.on('close', (code) => {
-      rmSync(profile, { recursive: true, force: true });
-      if (!existsSync(out)) reject(new Error(`Chrome wrote no screenshot for ${url} (exit ${code})\n${stderr}`));
+    child.on('close', (code, signal) => {
+      clearTimeout(timer);
+      if (signal === 'SIGKILL') reject(new Error(`Chrome did not finish ${url} within 60s`));
+      else if (!existsSync(out)) reject(new Error(`Chrome wrote no screenshot for ${url} (exit ${code})\n${stderr}`));
       else resolve();
     });
   });

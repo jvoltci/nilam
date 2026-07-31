@@ -9,3 +9,8 @@ _site/
 # hooks/nilam_assets.py is imported by mkdocs, so Python leaves bytecode beside it.
 __pycache__/
 *.py[cod]
+
+# Visual-regression working files: the generated capture pages, the current run's PNGs and
+# the diff images. All three are rebuilt by every `node test/visual.test.mjs`. The committed
+# reference PNGs live in test/visual/baselines/ and are NOT ignored.
+test/visual/out/

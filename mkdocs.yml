@@ -100,6 +100,7 @@ nav:
       - Tailwind and shadcn: tailwind.md
   - Honest limits:
       - Limitations: limitations.md
+      - Visual regression: visual.md
 
 extra:
   social:

@@ -233,8 +233,20 @@ export function compareFiles(baselineFile, currentFile, opts) {
   return compare(readPng(baselineFile), readPng(currentFile), opts);
 }
 
-/** The failure gate. A fixed floor as well as a ratio, so a small crop cannot hide a
- *  handful of moved pixels inside a percentage that rounds to nothing. */
-export function isRegression({ changed, total }, { maxPixels = 40, maxRatio = 0.0001 } = {}) {
-  return changed > Math.max(maxPixels, Math.round(total * maxRatio));
+/* ── the failure gate ─────────────────────────────────────────────────────────
+ *
+ * A FLAT pixel count, and not a percentage of the image. The first version of this used
+ * `max(40, 0.01% of the image)`, which sounds more careful and is worse, and it was caught
+ * red-handed rather than reasoned about: somebody edited one line of hero text in
+ * demo/index.html while this harness was being built. The change moved 655 pixels. On the
+ * 1280×5200 showcase the proportional gate was 666, so it PASSED; on the 520px showcase the
+ * gate was 322, so it failed. The same edit, hidden in the tall image and caught in the
+ * short one, purely because a percentage of a big image is a lot of pixels.
+ *
+ * A tolerance is only needed here for one thing: a future Chrome nudging a glyph edge. It is
+ * not needed for run-to-run variation, because there is none — `--determinism` reports 0
+ * pixels across three captures of all 31 pages. So 40 pixels, everywhere, regardless of how
+ * big the image is. Anything real is in the thousands; see docs/visual.md. */
+export function isRegression({ changed }, { maxPixels = 40 } = {}) {
+  return changed > maxPixels;
 }

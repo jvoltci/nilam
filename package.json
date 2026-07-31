@@ -73,6 +73,11 @@
     "build": "node build.mjs",
     "test": "node test/prove.test.mjs && node test/dtcg.test.mjs && node test/behaviours.test.mjs",
     "prepublishOnly": "node build.mjs && node test/prove.test.mjs",
-    "hero": "node assets/hero.mjs"
+    "hero": "node assets/hero.mjs",
+    "test:visual": "node test/visual.test.mjs",
+    "test:visual:update": "node test/visual.test.mjs --update",
+    "test:visual:determinism": "node test/visual.test.mjs --determinism",
+    "docs": "mkdocs serve",
+    "docs:build": "mkdocs build --strict"
   }
 }

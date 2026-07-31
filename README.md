@@ -115,13 +115,13 @@ verified against P3 luminance, and emitted behind `@media (color-gamut: p3)` as 
 Values are pinned rather than left to browser gamut mapping, so the colour that paints is
 the colour that was verified. Chroma gained:
 
-| | sRGB | P3 | |
+| step 9 | sRGB | P3 | |
 |---|---|---|---|
-| brand solid | 0.238 | 0.256 | +8% |
-| brand glow | 0.189 | 0.205 | +8% |
-| danger | 0.250 | 0.282 | +13% |
-| warn | 0.165 | 0.189 | +15% |
-| ok | 0.209 | 0.246 | +18% |
+| brand solid (light) | 0.219 | 0.234 | +7% |
+| brand glow (dark) | 0.174 | 0.188 | +8% |
+| danger | 0.220 | 0.249 | +13% |
+| warn | 0.133 | 0.152 | +15% |
+| ok | 0.195 | 0.229 | +17% |
 
 ---
 

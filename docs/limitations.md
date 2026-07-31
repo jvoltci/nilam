@@ -56,10 +56,16 @@ it, and none claims to. [The full story](solved.md#meaning-is-the-objective-sepa
 
 ## Gamut
 
-**sRGB only.** Display-P3 is not yet supported and all values are gamut-clamped. A clipped
-colour reports a better ratio than it paints, so the prover asserts every step is inside the
-gamut — but the ceiling is sRGB's, and on a wide-gamut display there is chroma available that
-nilam does not reach for.
+**Two, and only two.** sRGB is the base and Display-P3 is solved separately, proven
+separately, and emitted behind `@media (color-gamut: p3)` as explicit `color(display-p3 …)`
+values. Nothing wider — Rec.2020 is not supported.
+
+Every value in both palettes is asserted to be inside its own gamut, because a clipped colour
+reports a better ratio than it paints, which would make every other number here a lie.
+
+What is *not* claimed: that the media query is a perfect proxy for the screen. A browser that
+reports `color-gamut: p3` is telling you about its own capability, and nilam takes it at its
+word. [How the two palettes work](palette.md#two-gamuts-both-proven).
 
 ## One value is chosen, not derived
 
@@ -100,6 +106,17 @@ From [Platform export](tokens.md#what-is-not-verified):
   the documented shape; that is all that is claimed.
 - There is no published JSON Schema for DTCG token documents, only for resolvers. The flat
   documents are checked against the spec's structural rules by hand.
+
+## Most brand hues do not pass
+
+Sweeping all 360 degrees, only roughly **285–315** clears the dichromacy floor against a
+red/amber/green status set. Every blue fails, because tritanopia removes blue–yellow
+discrimination and a blue brand drifts into the grey-green that `ok` must occupy.
+
+Blue is the commonest brand colour in software, so for most projects the default answer is
+"this hue does not pass". `--brand-locked` is the route through, and it does not soften
+anything — it reclassifies the collapse as measured and moves the requirement onto the
+component. [The argument in full](colour-blindness.md#not-every-brand-hue-can-carry-these-statuses).
 
 ## What is deliberately not built
 

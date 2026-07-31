@@ -236,11 +236,17 @@ export function hexToOklch(hex) {
  * How much better, MEASURED rather than assumed — the first draft of this comment claimed
  * "roughly 25% more chroma at the blue end" and that was simply wrong:
  *
- *   brand solid  hue 285  L 0.585   0.238 -> 0.256   +8%
- *   brand glow   hue 285  L 0.660   0.189 -> 0.205   +8%
- *   danger       hue  22  L 0.620   0.250 -> 0.282  +13%
- *   warn         hue  68  L 0.750   0.165 -> 0.189  +15%
- *   ok           hue 142  L 0.620   0.209 -> 0.246  +18%
+ * These are the GAMUT BOUNDARIES at each lightness, which is not the same thing as the
+ * chroma a token ends up with — the envelope takes 0.92 of the boundary at step 9, so the
+ * shipped values are lower. The README quoted these figures as if they were token chroma,
+ * which was wrong; both are listed now so the distinction cannot be lost again.
+ *
+ *                            boundary        shipped step 9
+ *   brand solid  hue 285   0.238 -> 0.256   0.219 -> 0.234   +7%
+ *   brand glow   hue 285   0.189 -> 0.205   0.174 -> 0.188   +8%
+ *   danger       hue  22   0.250 -> 0.282   0.220 -> 0.249  +13%
+ *   warn         hue  68   0.165 -> 0.189   0.133 -> 0.152  +15%
+ *   ok           hue 142   0.209 -> 0.246   0.195 -> 0.229  +17%
  *
  * The gain is real but modest at the signature hue and largest on the statuses. Below
  * L 0.5 at hue 285 it is +2%, because that stretch of the blue boundary is nearly identical

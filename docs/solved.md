@@ -232,6 +232,16 @@ A perfectly separated palette in which danger is pink has failed at the only job
 and **no assertion could see it** — every number was green. This class of error is visible
 only by rendering, which is the honest limit on all of it.
 
+### And the constraint runs the other way too
+
+Fixing the windows and letting the search do its job produced a result nobody was looking
+for. Sweep all 360 degrees of brand hue and **only roughly 285–315 passes.** Every blue
+fails, because tritanopia removes blue–yellow discrimination and a blue brand drifts into the
+grey-green that `ok` has to occupy.
+
+285 is the *lowest* hue that clears it — which is an independent argument for the signature
+that had nothing to do with how it was chosen. [The full finding](colour-blindness.md#not-every-brand-hue-can-carry-these-statuses).
+
 ## Salience, and an assertion that was itself wrong
 
 The prover checks that the primary action is the most prominent thing on the page. The

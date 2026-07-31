@@ -116,23 +116,23 @@ real usability error.
 <div class="nd-demo">
   <div class="nd-grid">
     <div class="n-card n-card-pad">
-      <p class="nd-label">spinner · unknown duration</p>
+      <p class="nd-label">spinner</p>
       <div class="nd-row" style="gap:var(--space-4)">
         <span class="n-spinner n-spinner-sm"></span>
         <span class="n-spinner"></span>
         <span class="n-spinner n-spinner-lg"></span>
       </div>
-      <p class="nd-label">with an accessible wrapper</p>
+      <p class="nd-label">with a status wrapper</p>
       <span class="n-loading" role="status"><span class="n-spinner n-spinner-sm"></span>Checking your card…</span>
-      <p class="nd-label">dots · inline thinking</p>
+      <p class="nd-label">dots</p>
       <span class="n-loading" role="status"><span class="n-dots"><i></i><i></i><i></i></span>Generating</span>
     </div>
     <div class="n-card n-card-pad">
-      <p class="nd-label">progress · known proportion</p>
+      <p class="nd-label">progress</p>
       <progress class="n-progress" value="0.62" max="1">62%</progress>
-      <p class="nd-label">bar · unknown duration</p>
+      <p class="nd-label">bar</p>
       <div class="n-bar" role="progressbar" aria-label="Loading"></div>
-      <p class="nd-label">skeleton · the shape is known</p>
+      <p class="nd-label">skeleton</p>
       <div class="nd-stack" style="gap:var(--space-2)">
         <div class="n-skeleton" style="block-size:1.25rem;inline-size:40%"></div>
         <div class="n-skeleton" style="block-size:0.875rem"></div>

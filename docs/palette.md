@@ -95,30 +95,29 @@ So step 9 differs by mode:
 
 <div class="nd-demo">
   <div class="nd-grid">
-    <div class="nd-stack">
-      <div class="nd-swatch-big">--brand-9</div>
-      <div class="nd-facts">
-        <div><b>glow</b> · dark · <code>#8a7ef7</code> · L 0.660 · dark ink</div>
-        <div><b>solid</b> · light · <code>#755cf5</code> · L 0.585 · white ink</div>
-        <div>Zima Blue is L 0.667 · the reference accent L 0.657</div>
+    <div class="nd-swatch-big">--brand-9</div>
+    <div class="nd-facts">
+      <div><b>glow</b> · dark · <code>#8a7ef7</code> · L 0.660 · dark ink</div>
+      <div><b>solid</b> · light · <code>#755cf5</code> · L 0.585 · white ink</div>
+      <div>Zima Blue is L 0.667 · the reference accent L 0.657</div>
+    </div>
+  </div>
+  <p class="nd-label">the same three components, in both modes, on one page</p>
+  <div class="nd-grid">
+    <div class="nd-moment light">
+      <p class="nd-label">forced light</p>
+      <div class="nd-row">
+        <button class="n-btn n-btn-fill" type="button">Save changes</button>
+        <button class="n-btn" type="button">Cancel</button>
+        <span class="n-badge n-badge-brand"><i class="n-badge-glyph">◆</i>Pro</span>
       </div>
     </div>
-    <div class="nd-grid" style="grid-template-columns:1fr 1fr;gap:var(--space-3)">
-      <div class="nd-moment light">
-        <p class="nd-label">forced light</p>
-        <div class="nd-stack">
-          <button class="n-btn n-btn-fill" type="button">Save</button>
-          <button class="n-btn" type="button">Cancel</button>
-          <span class="n-badge n-badge-brand"><i class="n-badge-glyph">◆</i>Pro</span>
-        </div>
-      </div>
-      <div class="nd-moment dark">
-        <p class="nd-label">forced dark</p>
-        <div class="nd-stack">
-          <button class="n-btn n-btn-fill" type="button">Save</button>
-          <button class="n-btn" type="button">Cancel</button>
-          <span class="n-badge n-badge-brand"><i class="n-badge-glyph">◆</i>Pro</span>
-        </div>
+    <div class="nd-moment dark">
+      <p class="nd-label">forced dark</p>
+      <div class="nd-row">
+        <button class="n-btn n-btn-fill" type="button">Save changes</button>
+        <button class="n-btn" type="button">Cancel</button>
+        <span class="n-badge n-badge-brand"><i class="n-badge-glyph">◆</i>Pro</span>
       </div>
     </div>
   </div>
@@ -135,7 +134,7 @@ read as the same *kind* of colour.
     /* right */
     .primary { background: var(--brand-9); color: var(--brand-ink) }
 
-    /* wrong — and this is the most common contrast defect in comparable systems */
+    /* wrong, and it is the commonest contrast defect there is */
     .primary { background: var(--brand-9); color: white }
     ```
 
@@ -209,6 +208,56 @@ redeclare all eighty tokens on the card.
 colours at all rather than degraded colours. In 2026 that is the right trade, and the test
 suite asserts the function is actually used, so the decision cannot rot quietly.
 
+## Two gamuts, both proven
+
+The tokens above are sRGB. A second palette is solved against the **Display-P3** boundary,
+proven separately, and emitted behind a media query:
+
+```css
+@media (color-gamut: p3) {
+  :root {
+    --brand-9: light-dark(color(display-p3 0.44545 0.34988 0.95961),
+                          color(display-p3 0.5305 0.48541 0.96659));
+  }
+}
+```
+
+`color(display-p3 …)`, not an out-of-range `oklch()`, and that is the decision worth
+explaining. Emitting a colour outside sRGB and letting the browser gamut-map it hands the
+final value to code that never measured it: gamut mapping is the browser's algorithm, it may
+move lightness to preserve hue, and it therefore changes the contrast ratio by an unmeasured
+amount. **A palette proven in sRGB and mapped by someone else's code is a palette proven on
+some screens.** Explicit P3 components pin the value that was verified.
+
+What the wider gamut buys, measured at step 9:
+
+| | chroma gained |
+|---|---|
+| brand solid | +7% |
+| brand glow | +8% |
+| danger | +13% |
+| warn | +15% |
+| ok | +17% |
+
+Modest, and worth having where the hue is the point. Below L 0.5 at hue 285 it is about +2%,
+so most of the ramp is unchanged — P3 does not move a page background.
+
+The P3 block is audited from its **shipped digits** rather than from the solver's objects:
+parsed back out of the stylesheet, gamma-decoded, and re-measured with the P3 luminance
+coefficients. The build-time assertions run before a matrix multiply, a gamma encode, a clamp
+and a round to five places; only reading the file back catches a transposed row or a rounding
+step that pushed a border under 3:1. Same lesson as everywhere else in this package: an
+assertion that shares its premise with the thing it audits is not an audit.
+
+Both palettes must pass or nothing is written. A P3 block that fails its own contracts is
+worse than no P3 block, because it only misbehaves on the better screens.
+
+If you do not want the block, `--no-p3` omits it:
+
+```bash
+npx nilam 285 --no-p3 --css=tokens.css
+```
+
 ## Theming
 
 `color-scheme` drives everything, so forcing a mode is one declaration rather than a second
@@ -235,9 +284,14 @@ anywhere.
 npx nilam 262 --css=tokens.css
 ```
 
-Everything re-derives: the twelve steps of six families, both modes, the semantic hues, and
-the inks. Then it is proved, and a hue whose palette cannot satisfy the contracts fails the
-command rather than emitting a file.
+Everything re-derives: the twelve steps of six families, both modes, both gamuts, the
+semantic hues, and the inks. Then it is proved, and a hue whose palette cannot satisfy the
+contracts fails the command rather than emitting a file.
+
+**Most hues fail, and that is a finding rather than a bug.** Only roughly 285–315 clears the
+dichromacy floor against a red/amber/green status set. If your hue is a brand asset that
+predates the palette, `--brand-locked` is the honest route through —
+[the whole argument](colour-blindness.md#not-every-brand-hue-can-carry-these-statuses).
 
 ## Cascade layers
 

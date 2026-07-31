@@ -143,9 +143,19 @@ if (failures.length) throw new Error(failures.join('\n'));
 ```
 
 The prover runs on *your* hue. If a green that separates from it under tritanopia does not
-exist, the build fails and says so. That is not hypothetical — the brand hue constrains
-which semantic hues remain available, and it is
-[why `info` carries no hue at all](colour-blindness.md#why-info-is-achromatic).
+exist, the build fails and says so.
+
+**Most hues fail.** Sweeping all 360 degrees, only roughly 285–315 clears the floor against a
+red/amber/green status set — every blue drifts into the green that `ok` must occupy, for a
+tritanope. That is a finding rather than a bug, and `--brand-locked` is the honest route
+through when the hue predates the palette:
+
+```bash
+npx nilam 262 --brand-locked --css=tokens.css
+```
+
+Both facts are on [Colour blindness](colour-blindness.md#not-every-brand-hue-can-carry-these-statuses),
+along with [why `info` carries no hue at all](colour-blindness.md#why-info-is-achromatic).
 
 ## The showcase
 
@@ -174,8 +184,9 @@ Three suites, and they cover different things:
 | `dtcg.test.mjs` | 5,955 | the token export, both directions against the stylesheet |
 | `behaviours.test.mjs` | 198 | the APG keyboard contracts |
 
-500 of those live in `prove()` itself, which is the set the header of `nilam.tokens.css`
-claims hold over its exact values.
+`prove()` itself is 500 of those, and it runs twice — once on the sRGB palette and once on
+the Display-P3 one — which is the 1,000 the header of `nilam.tokens.css` claims hold over its
+exact values.
 
 Reading the emitted CSS back is not belt-and-braces. A formatter bug that swapped the two
 `light-dark()` arguments would leave every colour object correct and every shipped mode

@@ -212,6 +212,46 @@ an inset bar as well as a background, because the difference between `--neutral-
 `--neutral-4` is one contrast step *by construction* — the ramp is solved, so the step is
 deliberately small — and one small step cannot carry "this is the cursor" alone.
 
+## Not every brand hue can carry these statuses
+
+The strongest thing the sweep found, and it only became visible because the hues are chosen
+by search rather than by taste.
+
+Run the solver at every one of the 360 degrees. **Only roughly 285–315 clears the separation
+floor** against a red/amber/green status set. Every blue fails.
+
+The reason is structural, not a threshold artefact. Tritanopia removes blue–yellow
+discrimination, so a blue brand at 240–270 loses its blue component and drifts into the
+grey-green that `ok` has to occupy. A violet brand at 285 or above keeps a red component and
+stays clear of it.
+
+> If your statuses are red, amber and green, your brand hue cannot be blue — not for a
+> tritanope.
+
+**Blue is the commonest brand colour in software.** So this is a real constraint that
+essentially nothing accounts for.
+
+285 is also the *lowest* hue that passes, which is an independent argument for the signature
+that had nothing to do with how it was chosen.
+
+### When the hue cannot move
+
+"Move the brand hue" is correct advice and useless when the hue is a brand asset that
+predates the palette. Refusing to emit anything for a blue brand would make the tool unusable
+for most real projects, and quietly lowering the floor to let it pass would be a lie.
+
+```bash
+npx nilam 262 --brand-locked --css=tokens.css
+```
+
+`--brand-locked` moves brand-versus-status from **asserted** to **measured** — exactly the
+treatment danger-versus-ok already gets, and for exactly the same reason: with the hue pinned
+the collapse is now equally unavoidable. The affected pairs are reported, and
+`proveStatusChannels()` still fails the build if one of those components is hue-only.
+
+Nothing is weakened. The burden moves from the palette to the component, which is where it
+can actually be discharged.
+
 ## Why info is achromatic
 
 `info` is the fourth status and it has no hue at all. That is a result, not a taste.

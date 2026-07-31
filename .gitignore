@@ -1,3 +1,11 @@
 node_modules/
 *.tgz
 .DS_Store
+
+# mkdocs output. `mkdocs build` writes site/ by default; the workflow writes _site/.
+site/
+_site/
+
+# hooks/nilam_assets.py is imported by mkdocs, so Python leaves bytecode beside it.
+__pycache__/
+*.py[cod]

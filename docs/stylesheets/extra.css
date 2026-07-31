@@ -344,16 +344,56 @@ html:has(body[data-md-color-scheme='slate']) { color-scheme: dark }
 .md-typeset .nd-demo :is(.n-btn, .n-menu-item, .n-card-link) { text-decoration: none }
 .md-typeset .nd-demo table { font-size: var(--text-0) }
 
+/* THE SECOND COLLISION, also found by screenshot.
+ *
+ * pymdownx.details makes `<details>` a collapsible admonition, and mkdocs-material
+ * styles the bare element accordingly: a tinted background, a left border, a masked
+ * icon in `summary::before` and its own expand marker in `summary::after`. All of it
+ * unlayered.
+ *
+ * .n-accordion is a plain `<details name>` group, so it inherited the lot — the demo
+ * rendered as three blue callouts with material's chevrons instead of nilam's. Same
+ * remedy as the controls above: revert, so nilam's layer decides, or the UA does where
+ * nilam says nothing. The pseudo-elements need naming explicitly because nilam draws
+ * its own chevron in the same ::after, and `content: none` on ::before is what stops
+ * material's icon being generated at all. */
+.md-typeset .nd-demo :is(details, summary) {
+  background: revert-layer;
+  border: revert-layer;
+  border-radius: revert-layer;
+  box-shadow: revert-layer;
+  display: revert-layer;
+  font-size: revert-layer;
+  font-weight: revert-layer;
+  margin: revert-layer;
+  padding: revert-layer;
+}
+.md-typeset .nd-demo summary::before { content: none }
+.md-typeset .nd-demo .n-summary::after {
+  background: none;
+  mask-image: none;
+  -webkit-mask-image: none;
+  transform: none;
+  inset: revert-layer;
+  inline-size: revert-layer;
+  block-size: revert-layer;
+  rotate: revert-layer;
+}
+
 /* The caption above a demo. Mono, uppercase, tracked out — the type scale's own
    --tracking-micro, which exists because micro text at 0 tracking looks cramped. */
 .nd-label {
-  font: var(--weight-medium) var(--text-000) / 1 var(--font-mono);
+  /* 1.4, not the 1 the demo page uses. These captions wrap on a narrow column and at
+     line-height 1 the two lines collide. */
+  font: var(--weight-medium) var(--text-000) / 1.4 var(--font-mono);
   letter-spacing: var(--tracking-micro);
   text-transform: uppercase;
   color: var(--neutral-11);
   margin-block-end: var(--space-2) !important;
 }
-.nd-demo > .nd-label:not(:first-child) { margin-block-start: var(--space-5) !important }
+/* Any label that is not the first thing in its box opens a new group and needs the gap
+   — including the ones nested inside a card in the same demo. */
+.nd-demo .nd-label:not(:first-child) { margin-block-start: var(--space-5) !important }
 
 .nd-row {
   display: flex;

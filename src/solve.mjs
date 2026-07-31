@@ -374,8 +374,9 @@ export function solveSemanticHues(brandHue, { step = 2 } = {}) {
    * It optimised on light-mode solids and the result was used in dark as well, so
    * dark mode never got a vote — and once step 9 became mode-dependent the two modes
    * stopped agreeing about which hues were safe. It chose ok=148, worth 0.1044 in
-   * light and 0.0896 in dark, and shipped a dark-mode tritanopia failure. ok=144 is
-   * worth 0.1061 and 0.0922: slightly worse in light, and legal in both.
+   * light and 0.0896 in dark, and shipped a dark-mode tritanopia failure. Scoring both modes
+   * moves it into the low 140s — the shipped value is 142 — which is slightly worse in light
+   * and legal in both.
    *
    * The lesson generalises past this palette — optimising a shared decision on one
    * mode's numbers will silently sacrifice the other, and the assertion that catches

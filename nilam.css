@@ -579,21 +579,167 @@
   .n-btn-icon { padding: 0; inline-size: 2.25rem; }
   .n-btn-icon.n-btn-sm { inline-size: 1.75rem; }
 
-  /* Loading. aria-busy is the accessible signal; the spinner is the visible one. */
+  /* Loading. aria-busy is the accessible signal; the spinner is the visible one.
+   *
+   * The label goes transparent rather than being removed, so the button keeps its width
+   * and the row does not reflow when it starts loading. */
   .n-btn[aria-busy='true'] { color: transparent; pointer-events: none; }
   .n-btn[aria-busy='true']::before {
     content: '';
     position: absolute;
     inline-size: 0.875rem;
     block-size: 0.875rem;
-    border: var(--line-2) solid currentColor;
+    /* border-color, NOT `color`, and this is the bug the first version had. `color` was set
+     * to --brand-ink on the base rule, which is near-white in light mode — so a ghost or
+     * outline button's spinner was white on a transparent background and simply invisible.
+     * Each variant now names its own visible colour. */
+    border: var(--line-2) solid var(--neutral-12);
     border-block-start-color: transparent;
     border-radius: var(--r-full);
-    color: var(--brand-ink);
     animation: n-spin 0.6s linear infinite;
   }
-  .n-btn-fill[aria-busy='true']::before { color: var(--brand-ink); }
+  .n-btn-fill[aria-busy='true']::before,
+  .n-btn-danger[aria-busy='true']::before { border-color: var(--brand-ink); border-block-start-color: transparent; }
+  .n-btn-ink[aria-busy='true']::before { border-color: var(--neutral-1); border-block-start-color: transparent; }
+
+  /* ── loaders ─────────────────────────────────────────────────────────────
+   *
+   * Four, because they answer four different questions and substituting one for another is
+   * a real usability error:
+   *
+   *   .n-spinner   "something is happening"       — unknown duration, small, inline
+   *   .n-progress  "this much is done"            — known proportion, uses <progress>
+   *   .n-bar       "something is happening"       — unknown duration, page or panel width
+   *   .n-skeleton  "content shaped like THIS is coming"
+   *
+   * Prefer .n-skeleton wherever the shape is predictable. A spinner tells the reader
+   * nothing about what is arriving; a skeleton tells them where to look when it does.
+   */
+
+  .n-spinner {
+    display: inline-block;
+    flex: none;
+    inline-size: 1.125rem;
+    block-size: 1.125rem;
+    border: var(--line-2) solid var(--neutral-6);
+    /* One arc in a stronger colour is what makes rotation legible. A ring of uniform
+       colour rotating looks static. */
+    border-block-start-color: var(--brand-9);
+    border-radius: var(--r-full);
+    animation: n-spin 0.6s linear infinite;
+  }
+  .n-spinner-sm { inline-size: 0.875rem; block-size: 0.875rem; border-width: var(--line-1); }
+  .n-spinner-lg { inline-size: 1.75rem; block-size: 1.75rem; }
+  /* On a filled surface the ring must come from the ink, not from the neutral ramp. */
+  .n-spinner-on-fill { border-color: color-mix(in oklab, var(--brand-ink) 30%, transparent); border-block-start-color: var(--brand-ink); }
+
   @keyframes n-spin { to { rotate: 360deg; } }
+
+  /* Determinate. The element is <progress>, so the value is in the accessibility tree for
+     free and no aria-valuenow needs maintaining. appearance:none then rebuilds it, and
+     both pseudo-element sets are needed because WebKit and Firefox disagree. */
+  .n-progress {
+    appearance: none;
+    inline-size: 100%;
+    block-size: 0.375rem;
+    border: none;
+    border-radius: var(--r-full);
+    background: var(--neutral-4);
+    overflow: hidden;
+  }
+  .n-progress::-webkit-progress-bar { background: var(--neutral-4); border-radius: var(--r-full); }
+  .n-progress::-webkit-progress-value {
+    background: var(--brand-9);
+    border-radius: var(--r-full);
+    transition: inline-size var(--dur-2) var(--ease-out);
+  }
+  .n-progress::-moz-progress-bar { background: var(--brand-9); border-radius: var(--r-full); }
+
+  /* Indeterminate bar. A <progress> with no value attribute is already indeterminate to
+     assistive tech, so this styles that state rather than inventing a widget. */
+  .n-bar {
+    position: relative;
+    inline-size: 100%;
+    block-size: 0.1875rem;
+    border-radius: var(--r-full);
+    background: var(--neutral-4);
+    overflow: hidden;
+  }
+  .n-bar::after {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    inline-size: 40%;
+    border-radius: inherit;
+    background: var(--brand-9);
+    animation: n-slide 1.4s var(--ease-in-out) infinite;
+  }
+  @keyframes n-slide {
+    0%   { translate: -110% 0; }
+    100% { translate: 260% 0; }
+  }
+
+  /* Three dots, for inline "typing"/thinking states where a ring is too heavy. */
+  .n-dots { display: inline-flex; gap: 0.25rem; align-items: center; }
+  .n-dots i {
+    inline-size: 0.3125rem;
+    block-size: 0.3125rem;
+    border-radius: var(--r-full);
+    background: var(--neutral-11);
+    animation: n-pulse 1.2s var(--ease-in-out) infinite;
+  }
+  .n-dots i:nth-child(2) { animation-delay: 0.15s; }
+  .n-dots i:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes n-pulse {
+    0%, 60%, 100% { opacity: 0.3; scale: 0.8; }
+    30%           { opacity: 1;   scale: 1; }
+  }
+
+  /* ── loaders under prefers-reduced-motion ────────────────────────────────
+   *
+   * The base layer's blanket rule sets animation-duration to 0.01ms on everything, which
+   * for a loader is actively harmful: a FROZEN spinner does not read as "reduced motion",
+   * it reads as "this app has hung". The reader loses the only signal that anything is
+   * still happening.
+   *
+   * WCAG 2.3.3 governs non-essential animation, and a loading indicator is essential by
+   * definition, so an exemption is correct rather than a loophole. What these keep is the
+   * ONE property that carries the signal — opacity, which does not move anything across
+   * the screen and does not trigger vestibular symptoms. The travelling bar becomes a
+   * pulse in place; the spinner stops rotating and breathes instead.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    .n-spinner,
+    .n-dots i,
+    .n-bar::after,
+    .n-btn[aria-busy='true']::before {
+      animation-duration: 1.4s !important;
+      animation-iteration-count: infinite !important;
+    }
+    .n-spinner, .n-btn[aria-busy='true']::before {
+      animation-name: n-breathe !important;
+      /* Without rotation the single-arc trick stops reading as a ring, so close it. */
+      border-block-start-color: var(--brand-9);
+    }
+    .n-bar::after {
+      animation-name: n-breathe !important;
+      inline-size: 100%;
+      translate: none;
+    }
+    .n-skeleton { animation-name: n-breathe !important; animation-duration: 1.8s !important; }
+  }
+  @keyframes n-breathe { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+
+  /* The accessible wrapper. role="status" has an implicit aria-live="polite", so the text
+     inside is announced once without interrupting. The visible loader is decorative next
+     to it, which is why examples pair them. */
+  .n-loading {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-0);
+    color: var(--neutral-11);
+  }
 
   /* ── field ──────────────────────────────────────────────────────────────── */
 

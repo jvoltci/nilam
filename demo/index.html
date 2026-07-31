@@ -381,12 +381,46 @@
   </section>
 
   <section>
-    <div class="sec-head"><h2>Loading</h2></div>
-    <div class="n-card n-card-pad n-stack" style="gap:var(--space-2)">
-      <div class="n-skeleton" style="block-size:1.25rem;inline-size:40%"></div>
-      <div class="n-skeleton" style="block-size:0.875rem"></div>
-      <div class="n-skeleton" style="block-size:0.875rem"></div>
-      <div class="n-skeleton" style="block-size:0.875rem;inline-size:70%"></div>
+    <div class="sec-head">
+      <h2>Loading</h2>
+      <p>
+        Four, because they answer four different questions. Prefer the skeleton wherever the
+        shape is predictable — a spinner tells the reader nothing about what is arriving.
+        Under <code>prefers-reduced-motion</code> these keep animating on opacity alone: a
+        frozen spinner reads as a hung app, not as reduced motion.
+      </p>
+    </div>
+    <div class="grid-2">
+      <div class="n-card n-card-pad n-stack">
+        <p class="lbl">spinner · unknown duration</p>
+        <div class="row" style="gap:var(--space-4)">
+          <span class="n-spinner n-spinner-sm"></span>
+          <span class="n-spinner"></span>
+          <span class="n-spinner n-spinner-lg"></span>
+          <span class="n-loading" role="status"><span class="n-spinner n-spinner-sm"></span>Checking your card…</span>
+        </div>
+        <p class="lbl" style="margin-block-start:var(--space-3)">dots · inline thinking</p>
+        <span class="n-loading" role="status"><span class="n-dots"><i></i><i></i><i></i></span>Generating</span>
+      </div>
+      <div class="n-card n-card-pad n-stack">
+        <p class="lbl">progress · known proportion</p>
+        <progress class="n-progress" value="0.62" max="1">62%</progress>
+        <p class="lbl" style="margin-block-start:var(--space-3)">bar · unknown duration</p>
+        <div class="n-bar" role="progressbar" aria-label="Loading"></div>
+        <p class="lbl" style="margin-block-start:var(--space-3)">skeleton · shape is known</p>
+        <div class="n-stack" style="gap:var(--space-2)">
+          <div class="n-skeleton" style="block-size:1.25rem;inline-size:40%"></div>
+          <div class="n-skeleton" style="block-size:0.875rem"></div>
+          <div class="n-skeleton" style="block-size:0.875rem;inline-size:70%"></div>
+        </div>
+      </div>
+    </div>
+    <div class="row" style="margin-block-start:var(--space-4)">
+      <button class="n-btn n-btn-fill" aria-busy="true">Saving</button>
+      <button class="n-btn" aria-busy="true">Saving</button>
+      <button class="n-btn n-btn-ghost" aria-busy="true">Saving</button>
+      <button class="n-btn n-btn-ink" aria-busy="true">Saving</button>
+      <button class="n-btn n-btn-danger" aria-busy="true">Deleting</button>
     </div>
   </section>
 </main>

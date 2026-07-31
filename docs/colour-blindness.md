@@ -241,10 +241,10 @@ predates the palette. Refusing to emit anything for a blue brand would make the 
 for most real projects, and quietly lowering the floor to let it pass would be a lie.
 
 ```bash
-npx nilam 262 --brand-locked --css=tokens.css
+npx nilam 262 --strict-brand-hue --css=tokens.css
 ```
 
-`--brand-locked` moves brand-versus-status from **asserted** to **measured** — exactly the
+`--strict-brand-hue` moves brand-versus-status from **asserted** to **measured** — exactly the
 treatment danger-versus-ok already gets, and for exactly the same reason: with the hue pinned
 the collapse is now equally unavoidable. The affected pairs are reported, and
 `proveStatusChannels()` still fails the build if one of those components is hue-only.

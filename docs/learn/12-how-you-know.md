@@ -230,7 +230,7 @@ Four suites, and they cover different things:
 | Suite | Assertions | What it checks |
 |---|---|---|
 | `prove.test.mjs` | 1,294 | the solver's contracts, and the emitted CSS parsed back out of the file and re-measured |
-| `dtcg.test.mjs` | 5,955 | the token export, both directions against the stylesheet |
+| `dtcg.test.mjs` | 6,063 | the token export, both directions against the stylesheet |
 | `behaviours.test.mjs` | 198 | the ARIA APG keyboard contracts |
 | `visual.test.mjs` | 31 images | the rendered pixels, in both modes |
 

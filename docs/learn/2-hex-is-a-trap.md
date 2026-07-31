@@ -219,6 +219,33 @@ It also means you can move between "how light does it look" and "how much contra
 have" with a cube, in your head, which is the single most useful piece of arithmetic in this
 whole subject.
 
+### And the cube has a consequence at the dark end
+
+Because `Y = L³`, the light emitted collapses fast as `L` falls. At L 0.09 the luminance is
+**0.00073** — and the whole neighbourhood of that value is served by two or three integers out
+of 255.
+
+Which means a lightness you pick down there may not survive being written as a hex code.
+nilam ran into this choosing `--void`, a surface that has to read as *below* the page:
+
+| chosen L | quantises to | error on the way back, in OKLab |
+|---|---|---|
+| 0.07 | `#010102` | 0.0013 — fine |
+| 0.08 | `#020203` | 0.0062 — **fails** |
+| 0.09 | `#020204` | 0.0041 — **fails** |
+| 0.10 | `#030305` | 0.0016 — fine |
+| 0.11 | `#040406` | 0.0017 — fine |
+| 0.12 | `#050508` | 0.0035 — **fails** |
+| 0.13 | `#07070a` | 0.0004 — fine |
+
+**The error is not monotonic in lightness.** 0.07 works, 0.08 and 0.09 do not, 0.10 and 0.11
+do, 0.12 does not, 0.13 does. That is the 8-bit lattice showing through the cube: whether a
+given lightness happens to land near one of the two or three integers available is an accident.
+
+The value shipped is 0.10 rather than the 0.09 first chosen, and it was caught by an assertion
+on the exported hex fallback rather than by anyone looking. Below about L 0.15, a lightness has
+to be **checked** rather than chosen.
+
 ## One more term: gamut
 
 A **gamut** is the set of colours a screen can actually produce. OKLCH can name colours no

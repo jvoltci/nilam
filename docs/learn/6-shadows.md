@@ -112,7 +112,7 @@ much smaller. The gamma encoding roughly doubles the problem.
 
 **Tool one: raise the alpha.** Necessary, and not sufficient. nilam's `--shadow-1` runs 0.05 in
 light and 0.55 in dark — an **11× step** — and `nilam.scale.css` records the gap needed to look
-equal as about 23×.
+equal as about 10×.
 
 **Tool two: a rim.** Stop trying to darken the thing underneath and start lightening the top
 edge of the thing on top. This is where the encoding finally works in your favour, because on
@@ -204,7 +204,7 @@ is a *different* answer to the same question, needed only in one mode.
 
 Two honest notes.
 
-**The 23× figure is nilam's own measurement, not a published constant.** The shipped step at
+**The tenfold figure is nilam's own measurement, not a published constant.** The shipped step at
 level one is 11×, and the numbers in this chapter — byte moves, ΔL, the 6× rim advantage — are
 what you get from the compositing arithmetic directly. The exact multiplier you want depends on
 which perceptual metric you are matching, and there is no standard to cite.
@@ -217,5 +217,5 @@ is *there*.
 **Next:** [colour blindness](7-colour-blindness.md) — where the measuring gets much harder and
 much more interesting.
 
-**Reference:** [Elevation, and the 23× rule](../palette.md#elevation-and-the-23-rule) has the
+**Reference:** [Elevation, and the tenfold rule](../palette.md#elevation-and-the-tenfold-rule) has the
 shipped values and the reasoning as the source records it.

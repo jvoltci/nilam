@@ -164,7 +164,7 @@ The fourth one is the part most systems skip, and it is the reason the other thr
 
 ## How nilam handles it
 
-nilam ships **79 colour tokens**: six families — `neutral`, `brand`, `danger`, `warn`, `ok`,
+nilam ships **81 colour tokens**: six families — `neutral`, `brand`, `danger`, `warn`, `ok`,
 `info` — of twelve steps each, plus an ink token per family and one card surface. Every step
 is a role, not a shade.
 

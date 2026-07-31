@@ -114,7 +114,7 @@ red/amber/green status set. Every blue fails, because tritanopia removes blue–
 discrimination and a blue brand drifts into the grey-green that `ok` must occupy.
 
 Blue is the commonest brand colour in software, so for most projects the default answer is
-"this hue does not pass". `--brand-locked` is the route through, and it does not soften
+"this hue does not pass". `--strict-brand-hue` is the route through, and it does not soften
 anything — it reclassifies the collapse as measured and moves the requirement onto the
 component. [The argument in full](colour-blindness.md#not-every-brand-hue-can-carry-these-statuses).
 

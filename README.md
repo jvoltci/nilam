@@ -74,8 +74,10 @@ nilam simulates every status pair under **protanopia, deuteranopia and tritanopi
 ([Machado, Oliveira & Fernandes 2009](https://doi.org/10.1109/TVCG.2009.113) severity-1.0
 matrices, applied in linear sRGB) and measures the separation. Then:
 
-- The **brand** must never be confusable with a status under any vision. Hard failure.
-  This is always avoidable — the brand hue is a free variable.
+- Under **normal vision**, a brand that is confusable with a status is a hard failure. No
+  icon makes a save button that looks like an error acceptable, so the hue has to move.
+- Under a **dichromacy**, it is reported and the affected components are required to carry a
+  glyph — see [Choosing a brand hue](#choosing-a-brand-hue).
 - Status pairs that **do** collapse are reported, not hidden. Red and green *are* the
   same colour to a deuteranope; no hue assignment fixes it.
 - That report becomes a **build failure** unless the collapsing components carry a
@@ -188,6 +190,12 @@ and read as the same *kind* of colour. The same hue at L 0.500 reads as pigment 
 
 Always pair step 9 with `--<family>-ink`. A hard-coded `color: white` on a filled button is
 the most common contrast defect in comparable systems.
+
+**Whether the ink actually flips is hue-dependent, and that is the point of the token.** At hue
+285 the brand ink is white in light and near-black in dark. At hue 219.5 — measured in a real
+app — it solves to dark in *both* modes, so the brand button does not flip at all, while
+`danger` in the same palette still does. Two adjacent buttons can need two different inks, one
+of them mode-dependent. That is unguessable, which is why it is solved rather than written.
 
 ---
 
@@ -370,7 +378,7 @@ alive under `prefers-reduced-motion`.
 npm test
 ```
 
-7,430 assertions. They cover three separate things:
+7,555 assertions. They cover three separate things:
 
 1. **The solver** — every role contract, gamut, interaction-state perceptibility, and the
    dichromacy separation floor.

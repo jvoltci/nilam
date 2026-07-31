@@ -164,7 +164,7 @@ html:has(body[data-md-color-scheme='slate']) { color-scheme: dark }
   --md-footer-fg-color--light: var(--neutral-11);
   --md-footer-fg-color--lighter: var(--neutral-8);
 
-  /* Elevation, straight through. The alphas inside --shadow-* differ by roughly 23x
+  /* Elevation, straight through. The alphas inside --shadow-* differ by roughly 11x
      between modes because browsers composite alpha in gamma-encoded sRGB; material's
      own z1/z2/z3 are one fixed set of blacks, which is why most dark themes look
      flat. */

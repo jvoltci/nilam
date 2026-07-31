@@ -147,11 +147,11 @@ exist, the build fails and says so.
 
 **Most hues fail.** Sweeping all 360 degrees, only roughly 285–315 clears the floor against a
 red/amber/green status set — every blue drifts into the green that `ok` must occupy, for a
-tritanope. That is a finding rather than a bug, and `--brand-locked` is the honest route
+tritanope. That is a finding rather than a bug, and `--strict-brand-hue` is the honest route
 through when the hue predates the palette:
 
 ```bash
-npx nilam 262 --brand-locked --css=tokens.css
+npx nilam 262 --strict-brand-hue --css=tokens.css
 ```
 
 Both facts are on [Colour blindness](colour-blindness.md#not-every-brand-hue-can-carry-these-statuses),
@@ -180,7 +180,7 @@ Three suites, and they cover different things:
 
 | Suite | Assertions | What it checks |
 |---|---|---|
-| `prove.test.mjs` | 1,277 | the solver's contracts, and the emitted CSS parsed back out of the file and re-measured |
+| `prove.test.mjs` | 7,555 | the solver's contracts, and the emitted CSS parsed back out of the file and re-measured |
 | `dtcg.test.mjs` | 5,955 | the token export, both directions against the stylesheet |
 | `behaviours.test.mjs` | 198 | the APG keyboard contracts |
 

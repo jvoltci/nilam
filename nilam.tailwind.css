@@ -196,7 +196,7 @@
 
   /* Tailwind ships seven shadow steps; nilam solves three. Mapping them 7-to-3 rather
      than inventing four more keeps every shadow one of the measured ones — including the
-     mode-aware alpha, which is ~23x heavier in dark because browsers composite alpha in
+     mode-aware alpha, which is ~11x heavier in dark because browsers composite alpha in
      gamma-encoded sRGB. That gap is why most dark themes look flat. */
   --shadow-2xs: var(--shadow-1);
   --shadow-xs: var(--shadow-1);

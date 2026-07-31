@@ -104,7 +104,7 @@ So step 9 differs by mode:
   </div>
   <p class="nd-label">the same three components, in both modes, on one page</p>
   <div class="nd-grid">
-    <div class="nd-moment light">
+    <div class="nd-moment light" style="color:var(--neutral-12)">
       <p class="nd-label">forced light</p>
       <div class="nd-row">
         <button class="n-btn n-btn-fill" type="button">Save changes</button>
@@ -112,7 +112,7 @@ So step 9 differs by mode:
         <span class="n-badge n-badge-brand"><i class="n-badge-glyph">◆</i>Pro</span>
       </div>
     </div>
-    <div class="nd-moment dark">
+    <div class="nd-moment dark" style="color:var(--neutral-12)">
       <p class="nd-label">forced dark</p>
       <div class="nd-row">
         <button class="n-btn n-btn-fill" type="button">Save changes</button>
@@ -192,7 +192,7 @@ redeclare all eighty tokens on the card.
 
 <div class="nd-demo">
   <p class="nd-label">a dark island on a light page, with no token redeclared</p>
-  <div class="nd-moment light">
+  <div class="nd-moment light" style="color:var(--neutral-12)">
     <p style="font-size:var(--text-0)">This panel is forced light.</p>
     <div class="nd-moment dark" style="margin-block-start:var(--space-3)">
       <p style="font-size:var(--text-0)">And this one is forced dark, inside it.</p>
@@ -290,7 +290,7 @@ contracts fails the command rather than emitting a file.
 
 **Most hues fail, and that is a finding rather than a bug.** Only roughly 285–315 clears the
 dichromacy floor against a red/amber/green status set. If your hue is a brand asset that
-predates the palette, `--brand-locked` is the honest route through —
+predates the palette, `--strict-brand-hue` is the honest route through —
 [the whole argument](colour-blindness.md#not-every-brand-hue-can-carry-these-statuses).
 
 ## Cascade layers
@@ -335,7 +335,7 @@ instead is state where each number came from.
 | elevation | `--shadow-1/2/3`, `--rim`, `--scrim` | see below |
 | stacking | `--z-base`, `--z-sticky`, `--z-overlay`, `--z-max` | only four, and three are legacy — dialogs and popovers live in the browser's top layer, which no z-index reaches |
 
-### Elevation, and the 23× rule
+### Elevation, and the tenfold rule
 
 The alphas inside `--shadow-*` differ by an order of magnitude between modes, and it is the
 least obvious thing in the file.
@@ -343,7 +343,10 @@ least obvious thing in the file.
 Browsers composite alpha in **gamma-encoded sRGB**, not linear. Black at 8% over a
 near-white page darkens it a lot; the same black at 8% over a near-black page changes almost
 nothing, because the encoding has already spent most of its precision at the dark end.
-Measured, the gap needed to *look* equal is about **23×**.
+Measured, the gap needed to *look* equal is about **10×** — the alpha producing the same
+OKLab lightness drop over each ground, 10.5× at a subtle step falling to 7.9× at a heavy one.
+The shipped alphas are 11×, which is consistent. An earlier version of this page said 23×; no
+metric reproduces that and it was wrong.
 
 Which is why "our dark mode shadows look flat" is a universal complaint, and why dark themes
 that work switch to a light rim instead. Both are here:

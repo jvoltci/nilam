@@ -101,9 +101,9 @@ them is legible on a card. Five unrelated hues are the usual choice and they fai
 
 Tailwind ships seven shadow steps; nilam solves three. They map many-to-one rather than
 inventing four more, which keeps every shadow one of the measured ones — including the
-mode-aware alpha, which is about 23× heavier in dark mode because browsers composite alpha in
+mode-aware alpha, which is about 11× heavier in dark mode because browsers composite alpha in
 gamma-encoded sRGB. That gap is
-[why most dark themes look flat](palette.md#elevation-and-the-23-rule).
+[why most dark themes look flat](palette.md#elevation-and-the-tenfold-rule).
 
 ## `--color-*: initial`, and it must come first
 

@@ -10,10 +10,16 @@
   :root {
     /* ── type ──────────────────────────────────────────────────────────────
      *
-     * A 1.2 minor-third ratio, fluid between a 360px and a 1280px viewport. 1.2 rather
-     * than the more fashionable 1.25 or 1.333: those look better in a specimen and fall
-     * apart in a dense UI, where you need four or five distinct sizes inside one card
-     * and a big ratio runs out of room by the third one.
+     * Fluid between a 360px and a 1280px viewport, on a ratio that is NOT constant — and
+     * saying "a 1.2 minor third", as this comment did, was wrong. Measured at the 1280px end,
+     * adjacent steps run 1.07-1.08 below --text-1 and widen to 1.27-1.33 above --text-3. 1.2
+     * describes the middle and nothing else.
+     *
+     * That is deliberate, not drift. A dense UI needs four or five distinct sizes inside one
+     * card, which only works if the small end is finely spaced; display sizes need to separate
+     * hard or they read as the same size at a glance. A single ratio cannot do both, and the
+     * fashionable 1.25 or 1.333 look better in a specimen and run out of room by the third
+     * step.
      *
      * clamp() on every step, so there is no breakpoint at which type jumps. The rem
      * units mean a user's own font-size setting still scales all of it — 1.4.4. */
@@ -138,7 +144,10 @@
      * Browsers composite alpha in GAMMA-ENCODED sRGB, not linear. So black at 8% over a
      * near-white page darkens it a lot, and the same black at 8% over a near-black page
      * changes almost nothing — the encoding has already spent most of its precision at
-     * the dark end. Measured, the gap needed to LOOK equal is about 23x.
+     * the dark end. Measured, the gap needed to LOOK equal is about 10x — measured as the alpha
+     * that produces the same OKLab lightness drop over each ground: 10.5x at a subtle step,
+     * falling to 7.9x at a heavy one. An earlier version of this comment said 23x, which no
+     * metric I can construct reproduces; the shipped alphas below are 11x and consistent.
      *
      * Which is why "our dark mode shadows look flat" is a universal complaint and why
      * dark themes that work switch to a light rim instead. Both are here: a shadow, and
@@ -158,8 +167,11 @@
        scratch. In dark mode it is what makes a raised surface look raised. */
     --rim: inset 0 1px 0 light-dark(transparent, oklch(1 0 0 / 0.06));
 
-    /* Dialog backdrop. Heavier in light mode, because dimming a bright page needs more
-       than dimming a dark one for the same perceived separation. */
+    /* Dialog backdrop. The light alpha is LOWER (0.4 against 0.6) and its effect is heavier:
+       measured, it drops the page by ΔL 0.283 where the dark one drops 0.052. Same reason the
+       shadows differ — alpha composites on gamma-encoded bytes, so the light end has far more
+       of them to spend. An earlier version of this comment said "heavier in light mode", which
+       is true of the effect and reads as a claim about the alpha, which is the other way up. */
     --scrim: light-dark(oklch(0.2 0.01 285 / 0.4), oklch(0 0 0 / 0.6));
 
     /* ── z ────────────────────────────────────────────────────────────────

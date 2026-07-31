@@ -169,7 +169,7 @@ The non-colour scales — type, space, radius, lines, focus, motion, stacking, e
 chapter: there is one place each number lives, and the export is a view of it rather than a
 second copy.
 
-And it is asserted in both directions. `dtcg.test.mjs` is **5,955 assertions** comparing the
+And it is asserted in both directions. `dtcg.test.mjs` is **6,063 assertions** comparing the
 export against the stylesheet and the stylesheet against the export, because a token present in
 one and absent from the other is exactly the failure a one-way check cannot see.
 

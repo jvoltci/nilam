@@ -562,7 +562,8 @@ const SCALE_DESCRIPTIONS = {
   elevation: 'shadows, and the least obvious thing in the system. Browsers composite alpha '
     + 'in GAMMA-ENCODED sRGB, so black at 8% over a near-white page darkens it a lot and the '
     + 'same black over a near-black page changes almost nothing. Measured, the gap needed to '
-    + 'LOOK equal is about 23x — which is why "our dark shadows look flat" is a universal '
+    + 'LOOK equal is about 10x, and the shipped alphas are 11x — which is why "our dark '
+    + 'shadows look flat" is a universal '
     + 'complaint. Both answers ship: a heavier dark-mode shadow, and a top rim that only '
     + 'exists in dark mode.',
 };

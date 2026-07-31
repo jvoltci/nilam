@@ -231,11 +231,23 @@ described above. So the harness injects:
 The layer name is the whole trick. For `!important` declarations the order reverses, so an
 `!important` in the first layer beats one in a later layer. **Unlayered would have lost.**
 
-Two details that make it work. Re-opening an existing layer name **appends to that layer in its
-original position**, so this genuinely lands in `nilam.motion` rather than creating a new last
-layer. And the harness targeted `nilam.tokens` until 0.4.1 — it had to move when the loader
-exemption did, which is a fair illustration of how much of this depends on knowing the layer
-order rather than on the selectors.
+One detail makes it work, and it is the single most useful thing to know about layers:
+
+> **A layer's position is fixed by the first statement that names it. A later statement can
+> only append to it.**
+
+So re-opening `nilam.motion` here genuinely lands in the first layer rather than creating a new
+last one. And the same rule, read the other way, is a trap: **you cannot reorder a layer with a
+second `@layer` statement.** nilam's own setup instructions got this wrong — they said to add
+`@layer nilam.motion, …` to your stylesheet, which does nothing if your file already declares an
+order, as any granular Tailwind arrangement does. Measured in a real application: it placed
+`nilam.motion` after `nilam.components` and every loader stayed frozen. It has to go **into the
+existing statement**:
+
+```css
+@layer theme, base, nilam.motion, nilam.tokens, nilam.base,
+       nilam.components, nilam.utilities, components, utilities;
+```
 
 Which is the point worth taking away: the same rule that caused a three-release bug is what
 makes the screenshot harness work. It is not a trap, it is a mechanism — the trap is not
@@ -303,8 +315,13 @@ The same property is what makes the Tailwind bridge work at all. Tailwind v4 put
 in layers, and nilam has to sit **between** `base` and `utilities`:
 
 ```css
+/* nilam.motion must be NAMED FIRST, before anything else is imported. */
+@layer nilam.motion, nilam.tokens, nilam.base,
+       nilam.components, nilam.utilities;
+
 @import 'tailwindcss/theme.css' layer(theme);
 @import 'tailwindcss/preflight.css' layer(base);
+@import 'nilam/motion.css';
 @import 'nilam/tokens.css';
 @import 'nilam/base.css';
 @import 'nilam/tailwind.css';
@@ -316,6 +333,11 @@ Granular imports rather than the single `@import 'tailwindcss'`, because sub-lay
 interleave with outside layers. Put nilam after `utilities` and `nilam.base`'s heading rules beat
 your `text-2xl`; put it before `base` and Tailwind's preflight beats nilam's headings. Both were
 measured. Both are wrong.
+
+And **importing `motion.css` is not enough on its own.** A layer is created where it is first
+*named*; leave it to the `@import` and it is created after `nilam.utilities`, where its
+`!important` loses again. That is why the `@layer` statement is on the first line — and why, if
+your file already has one, `nilam.motion` has to go inside it.
 
 **Next:** [what the browser now does for free](10-the-platform.md).
 

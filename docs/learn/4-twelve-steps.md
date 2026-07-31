@@ -233,7 +233,8 @@ Not against the page. Against the worst surface the token is allowed to sit on. 
 against the page and then using the token on a card is how a system ships a ratio that was
 true in the documentation and false on screen.
 
-Six families of twelve, plus an ink token each and one shared surface: **79 colour tokens**.
+Six families of twelve, plus an ink token each, one shared card surface and two values the
+twelve steps cannot express: **81 colour tokens**.
 `info` is the neutral scale byte for byte, which chapter 7 explains, and it keeps the identical
 twelve-step shape and the identical floors — only the chroma is gone.
 

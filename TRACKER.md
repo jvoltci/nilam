@@ -9,7 +9,7 @@ repositories and the registry, not from memory.
 
 | | |
 |---|---|
-| npm | `nilam@0.4.4` — 29 files, zero dependencies |
+| npm | `nilam@0.5.0` — zero dependencies |
 | Docs | <https://jvoltci.github.io/nilam/> — 11 reference pages + 13 Learn pages |
 | Assertions | 7,555 numeric (1,294 prove · 6,063 dtcg · 198 behaviours) + 31 visual baselines |
 | CI | 5 jobs: prove on Node 18/24, generated-files-are-current, tarball-installs, css-parses, visual |
@@ -72,19 +72,27 @@ because both are a 4px grid. The test for whether a mapping belongs in the bridg
 Tailwind had anything at that name: if it did, changing its meaning is not adoption, it is
 reaching in and moving furniture.
 
-### 2. Per-app items, honestly flagged rather than hidden
+### 2. Per-app items — all closed, with corrections
+
+| App | Item | Outcome |
+|---|---|---|
+| studio | XY pads had no keyboard operation (WCAG 2.1.1) | **Closed.** `role="group"` + one `role="slider"` per axis. Verified by reading engine state, not the DOM: energy 50→100% took the lane meters from 9 audible lanes to 17 |
+| studio | `ArrangerDrawer` was not a `<dialog>` | **Closed, and the objection had expired** — the synth editor was already a `<dialog>`, so the editor moved from sibling to last child and the drawer became one. 98 Tab presses wrap correctly |
+| studio | Canvas text over the seeded gradient | **Closed.** Worst case 1.01:1 → 5.70:1, found by sweeping **all 648,000 gradients** the generator can emit rather than sampling seeds |
+| teleport | Video, screen-share and the call bar never rendered | **Closed.** Rendered for the first time with a local relay and fake devices; **three real defects found**, all fixed |
+| teleport | Content clips at 900px | **DID NOT REPRODUCE.** Measured 20 times across five states and four heights: zero unreachable pixels, including during a real 6 MB transfer. `scrollHeight == innerHeight` was content that happens to be exactly 900px tall. The `overflow-hidden` was doing nothing for its stated purpose either — `overscroll-behavior-y` computed to `auto` — so it carried the whole cost and none of the benefit. Replaced with `overscroll-none` on `<html>` |
+| aire | Never tested against the live API | **Closed.** `wrangler dev` runs fully offline. All seven request/response shapes matched except one, and it found **a dropped connection silently losing the vote** |
+| aire | No CI workflow | **Closed.** Two jobs, including a vendored-palette freshness check, with five negative tests proving each check can fail |
+| naina | `index.d.ts` declared `quad` flat | **Closed.** It is a tuple now, mutation-tested. A **second lie** was found in the same interface: `bbox` documented a `score` the runtime does not emit |
+| naina | `rust` CI failed since 29 July | **Reopened as worse: it has NEVER passed.** Added 29 July in the same commit as `build.rs`. Three missing link inputs, not one. Being fixed via CMake emitting the link line |
+
+### Newly open, found while closing the above
 
 | App | Item |
 |---|---|
-| studio | XY pads have no keyboard equivalent (WCAG 2.1.1). Pre-existing; `role` and `aria-label` added, but a keyboard user still cannot sweep the filter |
-| studio | `ArrangerDrawer` is not a `<dialog>` and has no focus trap. It renders a modal as a sibling, so `showModal()` would make that inert and paint it underneath |
-| studio | Canvas text over the procedural gradient has no contrast guarantee — only the two data readouts got plates |
-| teleport | Video, screen-share and the call bar were never rendered; they need two peers with media tracks, and only data channels were exercised |
-| teleport | Content clips at a 900px viewport and cannot be scrolled to. `overflow-hidden` on `body` and the page root is pre-existing |
-| aire | Never tested against the live API — all driving used a mock written from reading `aire-api` |
-| aire | No CI workflow exists at all |
-| naina | `rust` CI job has failed since 29 July on `unable to find library -lonnxruntime`. Unrelated to any of this |
-| naina | `bindings/wasm/src/index.d.ts` declares `quad: number[]` where the runtime emits `number[][]` — the root cause of an overlay that had never painted |
+| studio | The arranger drawer is opened by long-pressing a `<canvas>`, which cannot hold focus — **there is no keyboard path to open it at all.** Needs a focusable grid over the canvas, which is a feature rather than a fix |
+| teleport | A pre-existing WebRTC glare bug: `InvalidAccessError` on `setLocalDescription`, m-line order mismatch, when both peers add tracks near-simultaneously. Reproducible every run. Media still flows, so it self-recovers. Undiagnosed |
+| teleport | The 1px control border over video cannot clear 3:1 against both a black and a white frame with any single opaque colour. The icon carries the identification instead. Making that border load-bearing needs a two-tone stroke |
 
 ---
 

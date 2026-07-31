@@ -1,6 +1,6 @@
 {
   "name": "nilam",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Proven colour. A design system whose palette is solved from contrast requirements and verified under three kinds of colour blindness.",
   "keywords": [
     "design-system",
@@ -27,7 +27,7 @@
     "type": "git",
     "url": "git+https://github.com/jvoltci/nilam.git"
   },
-  "homepage": "https://github.com/jvoltci/nilam#readme",
+  "homepage": "https://jvoltci.github.io/nilam/",
   "bugs": {
     "url": "https://github.com/jvoltci/nilam/issues"
   },

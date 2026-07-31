@@ -9,6 +9,7 @@
 </p>
 
 <p align="center">
+  <a href="https://jvoltci.github.io/nilam/"><img src="https://img.shields.io/badge/docs-jvoltci.github.io%2Fnilam-755cf5" alt="documentation"></a>
   <a href="https://www.npmjs.com/package/nilam"><img src="https://img.shields.io/npm/v/nilam.svg" alt="npm version"></a>
   <a href="https://www.npmjs.com/package/nilam"><img src="https://img.shields.io/npm/dm/nilam.svg" alt="downloads"></a>
   <a href="https://bundlephobia.com/package/nilam"><img src="https://img.shields.io/bundlephobia/minzip/nilam" alt="bundle size"></a>
@@ -27,6 +28,10 @@ requirements rather than picked, and verified under three kinds of colour blindn
 before it ships.
 
 नीलम — *sapphire*. The signature is a violet-blue at hue 285.
+
+**Documentation: [jvoltci.github.io/nilam](https://jvoltci.github.io/nilam/)** — with live
+component demos, and a colour-blindness simulation that runs the same matrices the prover
+asserts against.
 
 ```bash
 npm install nilam

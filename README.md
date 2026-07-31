@@ -18,13 +18,6 @@
 
 <h3 align="center">Colour solved from contrast requirements, and proven for colourblind readers.</h3>
 
-<p align="center">
-  <a href="https://www.npmjs.com/package/nilam"><b>📦 npm</b></a> ·
-  <a href="https://github.com/jvoltci/nilam/issues"><b>🐛 Issues</b></a> ·
-  <a href="#what-is-actually-new-here"><b>🔬 The claim</b></a> ·
-  <a href="#honest-limits"><b>⚖️ The limits</b></a>
-</p>
-
 ---
 
 # nilam

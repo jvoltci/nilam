@@ -88,26 +88,32 @@ system. That is the claim, and it is a narrow one.
 
 ## Choosing a brand hue
 
-Not every hue can carry a red / amber / green status set. Sweeping all 360 degrees, only
-roughly **285–315** clears the separation floor by default.
+Every hue emits a palette. What varies is what you are told about it.
 
-The constraint is structural, not a threshold artefact. Tritanopia removes blue–yellow
-discrimination: a blue brand at 240–270 loses its blue component and drifts into the
-grey-green that `ok` must occupy, while a violet brand at 285 or above retains a red
-component and stays clear of it. So with those three statuses, a blue brand and a green
-`ok` are the same colour to a tritanope.
+A brand colour must not be confusable with a status colour, and that is checked under normal
+vision **and** under protanopia, deuteranopia and tritanopia.
 
-If the hue is fixed by an existing brand:
+**Under normal vision, a collapse is a hard failure.** If a save button and an error state
+are the same colour to everyone, no icon makes that acceptable — the hue has to move. That
+rules out roughly 15–150, where the brand would sit on top of `danger` or `warn`.
+
+**Under a dichromacy, a collapse is reported and the affected components are required to
+carry a non-hue channel** — the same treatment red-versus-green already receives. This is
+the case for any blue brand: tritanopia removes blue–yellow discrimination, so a blue at
+240–270 drifts into the grey-green that `ok` occupies. The build succeeds, the collapse
+appears in the notes, and `proveStatusChannels()` fails the build if those components have
+nothing but colour.
+
+That split is deliberate. Red–green collapse affects roughly 1 in 12 men; the tritanopia
+case roughly 1 in 10,000. Refusing to emit anything for a blue brand served neither group —
+the realistic outcome was not a better hue but an unusable tool — while the icon reaches
+both. A colour someone cannot distinguish was never going to help them; a tick on the badge
+does.
 
 ```bash
-npx nilam 262 --brand-locked --css=tokens.css
+npx nilam 250                     # emits, reports the collapse, requires a glyph
+npx nilam 250 --strict-brand-hue  # refuses instead, if the hue is still free to move
 ```
-
-`--brand-locked` reclassifies brand-versus-status from **asserted** to **measured**, which
-is how red-versus-green is already handled — the collapse is equally unavoidable. The
-affected pairs are reported, and `proveStatusChannels()` fails the build unless those
-components carry a non-hue channel. The requirement moves from the palette to the
-component, where it can be satisfied.
 
 ---
 

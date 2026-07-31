@@ -6,19 +6,17 @@
  *   npx nilam 262 --css=tokens.css     write the stylesheet
  *   npx nilam 262 -v                   show the hex of every step
  *   npx nilam 262 --no-p3              skip the wide-gamut block
- *   npx nilam 262 --brand-locked       the hue is a brand asset and cannot move
+ *   npx nilam 262 --strict-brand-hue   refuse if the brand collapses with a status
  *
- * Most hues FAIL by default, and that is a finding rather than a bug. Sweeping all 360
- * degrees, only about 285-315 clear the floor: tritanopia removes blue-yellow
- * discrimination, so a blue brand drifts into the green that "ok" has to be, while a violet
- * brand keeps a red component and stays clear of it. If your statuses are red/amber/green,
- * your brand hue cannot be blue — not for a tritanope.
+ * Every hue emits a palette. Where the brand collapses with a status under a dichromacy —
+ * which happens for any blue brand under tritanopia, because that vision loses blue-yellow
+ * discrimination and blue drifts into the green that "ok" must occupy — the collapse is
+ * REPORTED and the affected components are required to carry a glyph. Same treatment
+ * red/green already gets, and for the same reason: the collapse is unavoidable, so the
+ * remedy has to be a channel that is not hue.
  *
- * Blue is the commonest brand colour in software, so --brand-locked exists for the case
- * where the hue predates the palette. It converts brand-vs-status from an assertion into a
- * measured collapse plus a REQUIREMENT that those components carry a glyph — the same
- * treatment red-vs-green already gets, because the collapse is now equally unavoidable.
- * Nothing is weakened; the burden moves to the component, where it can be discharged.
+ * --strict-brand-hue restores the old behaviour of refusing outright. Use it when the hue is
+ * genuinely still free and you would rather be told to move it.
  *
  * The prover runs on YOUR hue, not on the signature. If no green exists that separates from
  * it under tritanopia, this exits non-zero and says so rather than emitting a palette that
@@ -47,7 +45,7 @@ const args = process.argv.slice(2);
 const hue = Number(args.find((a) => /^\d+(\.\d+)?$/.test(a)) ?? NILAM_HUE);
 const verbose = args.includes('-v') || args.includes('--verbose');
 const wantP3 = !args.includes('--no-p3');
-const brandLocked = args.includes('--brand-locked');
+const strictBrandHue = args.includes('--strict-brand-hue');
 const emit = args.find((a) => a.startsWith('--css='))?.slice(6);
 
 if (!Number.isFinite(hue) || hue < 0 || hue >= 360) {
@@ -63,7 +61,7 @@ const ms = Date.now() - t0;
 console.log(`nilam — solved hue ${hue} in ${ms}ms`);
 console.log(`  smallest hard-constraint separation, normal vision + 3 dichromacies: ${chosen.worst.toFixed(4)}`);
 
-const failed = report(palette, { verbose, brandLocked });
+const failed = report(palette, { verbose, strictBrandHue });
 
 /* The wide-gamut palette is solved and proven separately, against the P3 boundary and P3
  * luminance. Both must pass before anything is written: a P3 block that fails its own
@@ -72,7 +70,7 @@ const failed = report(palette, { verbose, brandLocked });
 let p3 = null;
 if (wantP3) {
   p3 = solvePalette(hue, { semanticHues: chosen.hues, gamut: 'display-p3' });
-  const proof = prove(p3, { brandLocked });
+  const proof = prove(p3, { strictBrandHue });
   const verdict = proof.failures.length ? `${proof.failures.length} FAILED` : 'all passed';
   console.log(`\n  display-p3: ${proof.count} assertions, ${verdict}`);
   for (const f of proof.failures) console.error(`    - ${f}`);

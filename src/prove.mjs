@@ -97,7 +97,7 @@ export function proveScale(name, mode, s, gamut = 'srgb') {
  */
 const SEPARATION_FLOOR = 0.09;
 
-export function proveDichromacy(mode, palette, { brandLocked = false } = {}) {
+export function proveDichromacy(mode, palette, { strictBrandHue = false } = {}) {
   const families = ['brand', 'danger', 'warn', 'ok'];
   const solids = families.map((f) => [f, palette[mode][f][9]]);
 
@@ -121,19 +121,33 @@ export function proveDichromacy(mode, palette, { brandLocked = false } = {}) {
    * constraint that essentially nobody accounts for, and it is only visible because the hues
    * are chosen by search rather than by taste.
    *
-   * ── brandLocked ──
+   * ── why a dichromatic collapse REPORTS rather than fails ──
    *
-   * The failure message says "move the brand hue", which is correct advice and useless when
-   * the hue is a brand asset that predates the palette. Refusing to emit anything for a blue
-   * brand would make the tool unusable for most real projects, and quietly lowering the floor
-   * to let it pass would be a lie.
+   * It used to fail, and that was backwards. The prevalences say why:
    *
-   * So `brandLocked: true` moves brand-vs-status from ASSERTED to MEASURED — exactly the
-   * treatment danger-vs-ok already gets, and for exactly the same reason: the collapse is now
-   * unavoidable, so the honest response is not to pretend it is absent but to require the
-   * component to carry a second, non-hue channel. proveStatusChannels() then enforces that
-   * and the build still fails if a component is hue-only. Nothing is weakened; the burden
-   * moves from the palette to the component, which is where it can actually be discharged. */
+   *   red vs green   danger/ok, deuteranopia   ~1 in 12 men    reported, glyph required
+   *   blue vs green  brand/ok,  tritanopia     ~1 in 10,000    used to REFUSE TO BUILD
+   *
+   * So the prover was strict about the rare collapse and pragmatic about the one roughly 800
+   * times more common. And the strictness bought nothing for anybody: `npx nilam 250`, an
+   * unremarkable blue, emitted no palette at all — true for 22 of the 24 hues in a full sweep
+   * — so the realistic outcome was not a better brand hue, it was the tool being written off.
+   *
+   * "Move the brand hue" is also advice most projects cannot take. A brand colour usually
+   * predates the palette by years and is not the palette author's to change.
+   *
+   * The remedy that actually reaches a tritanope is the one red/green already gets: a second,
+   * non-hue channel on the affected component. A colour they cannot distinguish was never
+   * going to help them; a tick on the badge does. So the collapse is measured, reported, and
+   * handed to proveStatusChannels(), which still fails the build when a component is hue-only.
+   * Nothing is weakened — the obligation moves from the palette, where it could not be
+   * discharged, to the component, where it can.
+   *
+   * NORMAL VISION IS STILL A HARD FAILURE. If a save button and an error state are the same
+   * colour to everyone, no glyph makes that acceptable and the hue simply has to move.
+   *
+   * strictBrandHue restores the refusal, for when the hue genuinely is still free and you
+   * would rather be told to move it than take on a glyph obligation. */
   const brandCollapses = [];
   for (const vision of [null, ...CVD_TYPES]) {
     const label = vision ?? 'normal vision';
@@ -143,10 +157,11 @@ export function proveDichromacy(mode, palette, { brandLocked = false } = {}) {
       const d = distance(brand, other);
       if (d >= SEPARATION_FLOOR) { check(true, ''); continue; }
 
-      if (brandLocked && vision) {
+      // `vision` is null for normal vision, so that case always falls through to the check.
+      if (!strictBrandHue && vision) {
         brandCollapses.push({ vision, a: 'brand', b: f, d });
         notes.push(
-          `${mode}: BRAND/${f} collapse under ${vision} (${d.toFixed(4)}) with the hue locked ` +
+          `${mode}: BRAND/${f} collapse under ${vision} (${d.toFixed(4)}) ` +
             `-> those components REQUIRE a non-hue channel`,
         );
         continue;
@@ -154,8 +169,8 @@ export function proveDichromacy(mode, palette, { brandLocked = false } = {}) {
       check(
         false,
         `${mode}: under ${label}, the BRAND is ${d.toFixed(4)} from "${f}" (floor ${SEPARATION_FLOOR}) — ` +
-          `a primary action and a ${f} state are the same colour to that reader. Move the brand hue, ` +
-          `or pass brandLocked if it cannot move and carry a glyph on those components instead.`,
+          `a primary action and a ${f} state are the same colour to that reader. ` +
+          `${vision ? 'Move the brand hue (strictBrandHue asked to be told rather than handed a glyph obligation).' : 'This is normal vision, so no glyph makes it acceptable — the hue has to move.'}`,
       );
     }
   }
@@ -254,20 +269,20 @@ export function proveSalience(mode, palette, gamut = 'srgb') {
 
 /* ── run ─────────────────────────────────────────────────────────────── */
 
-export function prove(palette, { brandLocked = false } = {}) {
+export function prove(palette, { strictBrandHue = false } = {}) {
   failures.length = 0; notes.length = 0; count = 0;
   for (const mode of ['light', 'dark']) {
     for (const family of ['neutral', 'brand', 'danger', 'warn', 'ok', 'info']) {
       proveScale(family, mode, palette[mode][family], palette.gamut ?? 'srgb');
     }
-    proveDichromacy(mode, palette, { brandLocked });
+    proveDichromacy(mode, palette, { strictBrandHue });
     proveSalience(mode, palette, palette.gamut ?? 'srgb');
   }
   return { count, failures: [...failures], notes: [...notes] };
 }
 
-export function report(palette, { verbose = false, brandLocked = false } = {}) {
-  const { count, failures, notes } = prove(palette, { brandLocked });
+export function report(palette, { verbose = false, strictBrandHue = false } = {}) {
+  const { count, failures, notes } = prove(palette, { strictBrandHue });
   console.log(`\nbrand hue ${palette.brandHue}   semantics ${JSON.stringify(palette.semanticHues)}`);
   if (verbose) {
     for (const mode of ['light', 'dark']) {

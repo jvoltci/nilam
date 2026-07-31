@@ -59,11 +59,13 @@
     "nilam.components.css",
     "build.mjs",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "assets/"
   ],
   "scripts": {
     "build": "node build.mjs",
     "test": "node test/prove.test.mjs",
-    "prepublishOnly": "node build.mjs && node test/prove.test.mjs"
+    "prepublishOnly": "node build.mjs && node test/prove.test.mjs",
+    "hero": "node assets/hero.mjs"
   }
 }

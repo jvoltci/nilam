@@ -1,3 +1,32 @@
+<p align="center">
+  <picture>
+    <!-- jsDelivr, not a relative path. npm rewrites relative image paths to
+         raw.githubusercontent.com, which serves .svg as text/plain to prevent XSS — so the
+         image silently fails to render on the npm page. jsDelivr sends image/svg+xml. -->
+    <source media="(prefers-color-scheme: dark)" srcset="https://cdn.jsdelivr.net/gh/jvoltci/nilam@master/assets/hero-dark.svg">
+    <img src="https://cdn.jsdelivr.net/gh/jvoltci/nilam@master/assets/hero-light.svg" alt="nilam — colour, proven. A twelve-step scale solved from contrast requirements, and four status colours shown as a deuteranope sees them." width="100%">
+  </picture>
+</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/nilam"><img src="https://img.shields.io/npm/v/nilam.svg" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/nilam"><img src="https://img.shields.io/npm/dm/nilam.svg" alt="downloads"></a>
+  <a href="https://bundlephobia.com/package/nilam"><img src="https://img.shields.io/bundlephobia/minzip/nilam" alt="bundle size"></a>
+  <a href="https://github.com/jvoltci/nilam/blob/master/LICENSE"><img src="https://img.shields.io/npm/l/nilam.svg" alt="licence"></a>
+  <a href="https://github.com/jvoltci/nilam/stargazers"><img src="https://img.shields.io/github/stars/jvoltci/nilam.svg?style=social" alt="stars"></a>
+</p>
+
+<h3 align="center">Colour solved from contrast requirements, and proven for colourblind readers.</h3>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/nilam"><b>📦 npm</b></a> ·
+  <a href="https://github.com/jvoltci/nilam/issues"><b>🐛 Issues</b></a> ·
+  <a href="#what-is-actually-new-here"><b>🔬 The claim</b></a> ·
+  <a href="#honest-limits"><b>⚖️ The limits</b></a>
+</p>
+
+---
+
 # nilam
 
 **Proven colour.** A design system whose palette is *solved* from contrast

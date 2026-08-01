@@ -100,7 +100,8 @@ export function proveScale(name, mode, s, gamut = 'srgb') {
 
 /* ── 2. the assertion nobody else ships ──────────────────────────────────
  *
- * Roughly 8% of men are dichromatic. Every design system answers this with the
+ * Roughly 8% of men have some red-green deficiency; about 2% are full dichromats, which is
+ * the severity simulated here. Every design system answers this with the
  * advice "do not rely on colour alone" and then ships a red/green semantic pair
  * without ever checking it.
  *

@@ -68,18 +68,29 @@ Hand-tuned scales are unverifiable by construction: nothing fails when a step dr
 Here, something fails. [Why solved colour](solved.md) is the argument, including the four
 times the solver was wrong and what caught it.
 
-### 2. It proves itself for colourblind readers
+### 2. No assertion shares a premise with the thing it audits
 
-Roughly 8% of men are dichromatic. Every design system answers this with the advice
-*"don't rely on colour alone"* and then ships a red/green semantic pair without ever
-checking it.
+The load-bearing idea here, and it was learned the expensive way.
 
-nilam simulates every status pair under protanopia, deuteranopia and tritanopia and
-measures the separation. Where a pair collapses it says so and requires the component to
-carry a second, non-hue channel — and that requirement is a build failure, not a
-suggestion.
+Every border in an early version was *solved* against the page and *asserted* against the
+page. Step 7 measured exactly 3.05:1 and was declared compliant. On a card — where controls
+actually live — it was **2.70:1**. The code that chose the value and the code that checked it
+made the same wrong assumption, so nothing disagreed.
 
-[Colour blindness](colour-blindness.md) has the live simulation and the measured numbers.
+**Twenty-five defects have been found in this package, and none of them by the assertions
+that existed at the time.** Every one came from running it against a real application, or
+from someone trying to reproduce a number that had been written down.
+
+So the checks are built to have an independent premise. Borders and text solve against the
+worst surface they may sit on, not the easiest. Display-P3 is solved and proven in its own
+gamut rather than mapped from sRGB and assumed fine.
+[`test/surfaces.test.mjs`](https://github.com/jvoltci/nilam/blob/master/test/surfaces.test.mjs)
+reads the shipped CSS and measures every painted surface against what it actually sits on —
+and an unclassified surface is a failure, not a pass, because a check that only tested pairs
+it already knew about would be a mirror of the stylesheet.
+
+7,879 numeric assertions and 31 visual baselines, in CI, on every push.
+[Why solved colour](solved.md) has the four times the solver itself was wrong.
 
 !!! warning "The keyboard layer has not been tested with a screen reader"
 

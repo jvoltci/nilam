@@ -17,21 +17,20 @@
   <a href="https://github.com/jvoltci/nilam/stargazers"><img src="https://img.shields.io/github/stars/jvoltci/nilam.svg?style=social" alt="stars"></a>
 </p>
 
-<h3 align="center">Colour solved from contrast requirements, and proven for colourblind readers.</h3>
+<h3 align="center">Every value is derived by inverting a contrast requirement. None of them was picked.</h3>
 
 ---
 
 # nilam
 
-**Proven colour.** A design system whose palette is *solved* from contrast
-requirements rather than picked, and verified under three kinds of colour blindness
-before it ships.
+**Proven colour.** A design system whose palette is *solved* rather than chosen — every
+lightness is the output of a constraint — and which re-derives and re-proves the entire
+system from one number: the hue.
 
 नीलम — *sapphire*. The signature is a violet-blue at hue 285.
 
-**Documentation: [jvoltci.github.io/nilam](https://jvoltci.github.io/nilam/)** — with live
-component demos, and a colour-blindness simulation that runs the same matrices the prover
-asserts against.
+**Documentation: [jvoltci.github.io/nilam](https://jvoltci.github.io/nilam/)** — live
+component demos, and the derivation behind every token.
 
 ```bash
 npm install nilam
@@ -64,27 +63,31 @@ a step cannot exist at a value that breaks it.
 Hand-tuned scales are unverifiable by construction: nothing fails when a step drifts.
 Here, something fails.
 
-### 2. It proves itself for colourblind readers
+### 2. No assertion shares a premise with the thing it audits
 
-Roughly 8% of men are dichromatic. Every design system answers this with the advice
-*"don't rely on colour alone"* and then ships a red/green semantic pair without ever
-checking it.
+This is the load-bearing idea in the repository, and it was learned the expensive way.
 
-nilam simulates every status pair under **protanopia, deuteranopia and tritanopia**
-([Machado, Oliveira & Fernandes 2009](https://doi.org/10.1109/TVCG.2009.113) severity-1.0
-matrices, applied in linear sRGB) and measures the separation. Then:
+Every border in an early version was *solved* against the page and *asserted* against the
+page. Step 7 measured exactly 3.05:1 and was declared compliant. On a card — where controls
+actually live — it was **2.70:1**. A closed loop: the code that chose the value and the code
+that checked it made the same wrong assumption, so nothing disagreed. Only using it in a real
+application surfaced it.
 
-- Under **normal vision**, a brand that is confusable with a status is a hard failure. No
-  icon makes a save button that looks like an error acceptable, so the hue has to move.
-- Under a **dichromacy**, it is reported and the affected components are required to carry a
-  glyph — see [Choosing a brand hue](#choosing-a-brand-hue).
-- Status pairs that **do** collapse are reported, not hidden. Red and green *are* the
-  same colour to a deuteranope; no hue assignment fixes it.
-- That report becomes a **build failure** unless the collapsing components carry a
-  non-hue channel. `proveStatusChannels()` enforces WCAG 1.4.1 instead of suggesting it.
+**Twenty-five defects have been found in this package. None was found by the assertions that
+existed at the time.** Every one came from running it against a real app, or from someone
+trying to reproduce a number that had been written down.
 
-No prior art was found for a machine-checked dichromat-separation assertion in a design
-system. That is the claim, and it is a narrow one.
+So the checks are built to have an *independent* premise:
+
+- Borders and text are solved against the worst surface they may sit on, not the easiest.
+- The Display-P3 palette is solved and proven separately in its own gamut, rather than
+  gamut-mapped from sRGB and assumed fine.
+- `test/surfaces.test.mjs` reads the shipped CSS and measures every painted surface against
+  what it actually sits on. **An unclassified surface is a failure, not a pass** — a check
+  that only tested pairs it already knew about would be a mirror of the stylesheet.
+- Numbers quoted in comments are re-derived by the suite, so they cannot rot.
+
+7,879 numeric assertions and 31 visual baselines, in CI, on every push.
 
 ---
 
@@ -92,8 +95,10 @@ system. That is the claim, and it is a narrow one.
 
 Every hue emits a palette. What varies is what you are told about it.
 
-A brand colour must not be confusable with a status colour, and that is checked under normal
-vision **and** under protanopia, deuteranopia and tritanopia.
+A brand colour must not be confusable with a status colour. That is measured under normal
+vision, and then again through three colour-vision transforms — the same maths that makes a
+palette survive greyscale printing, direct sunlight and a badly calibrated monitor, none of
+which are edge cases.
 
 **Under normal vision, a collapse is a hard failure.** If a save button and an error state
 are the same colour to everyone, no icon makes that acceptable — the hue has to move. That
@@ -106,8 +111,8 @@ the case for any blue brand: tritanopia removes blue–yellow discrimination, so
 appears in the notes, and `proveStatusChannels()` fails the build if those components have
 nothing but colour.
 
-That split is deliberate. Red–green collapse affects roughly 1 in 12 men; the tritanopia
-case roughly 1 in 10,000. Refusing to emit anything for a blue brand served neither group —
+That split is deliberate. Red–green deficiency of some degree affects roughly 1 in 12 men,
+though full dichromats are nearer 1 in 50; the tritanopia case is roughly 1 in 10,000. Refusing to emit anything for a blue brand served neither group —
 the realistic outcome was not a better hue but an unusable tool — while the icon reaches
 both. A colour someone cannot distinguish was never going to help them; a tick on the badge
 does.

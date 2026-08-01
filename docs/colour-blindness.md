@@ -1,6 +1,6 @@
 # Colour blindness
 
-Roughly 8% of men are dichromatic. Every design system answers this with the advice
+Roughly 8% of men have some red-green colour deficiency, and about 2% are full dichromats. Every design system answers this with the advice
 *"don't rely on colour alone"* and then ships a red/green semantic pair without ever
 checking it.
 

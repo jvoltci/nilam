@@ -17,8 +17,22 @@ tabs(document.querySelector('.n-tabs'));
 Also import the CSS for the three widgets that need it:
 
 ```css
-@import 'nilam/widgets.css';
+@import 'nilam/components.css';
+@import 'nilam/widgets.css';    /* combobox, slider, range — easy to miss, see below */
 ```
+
+!!! warning "Forgetting that second line is silent"
+
+    `.n-combobox`, `.n-listbox`, `.n-slider` and `.n-range` are ordinary class names. With
+    `widgets.css` missing, no selector fails, no import throws, and the markup renders as
+    unstyled native controls that **still respond to the keyboard**. It looks like it
+    works. A real app shipped a range slider that had been a bare browser input the whole
+    time and found out from a screenshot.
+
+    Since 0.6.0 `enhance()` warns in the console when it wires a widget and the stylesheet
+    is absent. If you wire widgets by hand rather than calling `enhance()`, nothing checks
+    for you — the sentinel it reads is `:root { --n-widgets-loaded: 1 }` at the top of
+    `widgets.css`, so you can read it the same way.
 
 Every widget below is live on this page. This site loads the published module and calls
 `enhance()` on each example block, so the keys described here are the keys that work here —

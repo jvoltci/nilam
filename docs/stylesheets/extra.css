@@ -459,10 +459,25 @@ html:has(body[data-md-color-scheme='slate']) { color-scheme: dark }
   padding: var(--space-4);
 }
 
-/* The dichromacy chips. */
-.nd-chips { display: flex; gap: var(--space-1) }
+/* The dichromacy chips.
+ *
+ * WRAP, AND A REAL FLEX-BASIS. This row of eight swatches was the only thing on the whole
+ * docs site that pushed a page sideways on a phone: at a 390px viewport the document
+ * measured 532px, so the entire article scrolled horizontally.
+ *
+ * `flex: 1` is `flex-grow:1 flex-shrink:1 flex-basis:0%`, which reads as "share the space
+ * out" and does not do that. A flex item's default `min-width: auto` stops it shrinking
+ * below its own min-content, and each chip is a six-character monospace hex label whose
+ * min-content is 54px. Eight of those plus gaps cannot fit 390px, so with no flex-wrap they
+ * did not shrink, did not wrap and did not scroll — they just made the page wider. .nd-row,
+ * sixty lines above, already had flex-wrap; this is the one helper that forgot it.
+ *
+ * 4.5rem basis gives a phone two rows of four and a desktop one row of eight that still
+ * grows to fill. Not `min-inline-size: 0`, which would let them shrink and clip the hex —
+ * here the label IS the content. */
+.nd-chips { display: flex; flex-wrap: wrap; gap: var(--space-1) }
 .nd-chips i {
-  flex: 1;
+  flex: 1 1 4.5rem;
   block-size: 2.5rem;
   border-radius: var(--r-2);
   display: grid;

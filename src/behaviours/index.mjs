@@ -105,6 +105,41 @@ export function enhance(root = typeof document !== 'undefined' ? document : null
   }
 
   out.all = [...out.tabs, ...out.menus, ...out.comboboxes, ...out.sliders, ...out.ranges];
+
+  /* WARN WHEN widgets.css IS MISSING, because nothing else does.
+   *
+   * The component layer is two files — nilam/components.css for single elements and
+   * nilam/widgets.css for the three that need this module. Importing only the first is an
+   * easy mistake and was a completely silent one: .n-combobox, .n-listbox, .n-slider and
+   * .n-range are ordinary class names, so no selector fails, no import throws, and the
+   * markup renders as unstyled native controls that still respond to the keyboard. It looks
+   * like it works. A real app shipped a range slider that had been a bare browser input the
+   * whole time and found out from a screenshot.
+   *
+   * The sentinel is :root { --n-widgets-loaded: 1 } at the top of widgets.css — a custom
+   * property is the only way a stylesheet can tell JavaScript it is present.
+   *
+   * Only fires when a widget was actually wired, so a page with just tabs and menus is never
+   * nagged. Warn rather than throw: the page works, and breaking it over a missing
+   * stylesheet would be worse than the bug it reports. */
+  const widgetCount = out.comboboxes.length + out.sliders.length + out.ranges.length;
+  const docEl = root.documentElement ?? root.ownerDocument?.documentElement;
+  if (widgetCount && docEl && typeof globalThis.getComputedStyle === 'function') {
+    const loaded = globalThis
+      .getComputedStyle(docEl)
+      .getPropertyValue('--n-widgets-loaded')
+      .trim();
+    if (!loaded) {
+      console.warn(
+        `nilam: enhance() wired ${widgetCount} widget(s), but nilam/widgets.css is not ` +
+          `loaded — they are unstyled. The component layer is two files:\n` +
+          `    @import 'nilam/components.css';\n` +
+          `    @import 'nilam/widgets.css';   /* combobox, slider, range */\n` +
+          `Nothing else reports this: the classes still match and the controls still work.`,
+      );
+    }
+  }
+
   out.destroy = () => {
     for (const c of out.all) c.destroy();
     for (const el of root.querySelectorAll(`[${MARK}]`)) el.removeAttribute(MARK);

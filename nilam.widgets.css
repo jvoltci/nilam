@@ -14,6 +14,21 @@
  */
 
 @layer nilam.components {
+  /* A SENTINEL, so a missing import stops being silent.
+   *
+   * nilam splits its component layer over two files: components.css for single elements,
+   * widgets.css for the three that need src/behaviours. Importing only the first is an easy
+   * mistake and, until this line, a completely quiet one — .n-combobox, .n-listbox,
+   * .n-slider and .n-range are all plain class names, so nothing throws, nothing warns, and
+   * the markup renders as unstyled native controls that still WORK. Someone shipped a
+   * range slider that had been a bare browser input the whole time and only found out by
+   * screenshot.
+   *
+   * enhance() reads this property and warns when it wires a widget and the value is absent.
+   * A custom property is the only channel available: CSS cannot signal to JS any other way,
+   * and this one costs one declaration and nothing at runtime. */
+  :root { --n-widgets-loaded: 1; }
+
   /* ── combobox ─────────────────────────────────────────────────────────────
    *
    * The popup is a plain absolutely-positioned element, NOT a [popover], and that is a

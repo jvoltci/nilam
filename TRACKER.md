@@ -102,7 +102,17 @@ that let the step-7 bug ship, one step down, found the same way.
 
 ## Applications
 
-All six on nilam, all committed, all deploys green.
+Five of six on `nilam@0.6.0`, all committed, all builds green. **tools is still on 0.5.0** —
+another session had 18 uncommitted files in it when 0.6.0 landed and a concurrent
+`package.json` edit would have collided. It needs `nilam: ^0.6.0` and an install.
+
+`^0.5.0` DOES NOT RESOLVE TO 0.6.0. npm's caret pins the minor on a 0.x version, so every app
+was frozen at 0.5.0 and each spec had to be changed by hand. Worth knowing before assuming a
+patch reached anything: until the bump, all nine defects — including invisible keyboard focus
+in dark mode — were live in all six.
+
+teleport's e2e suite passed 5/5 on the bump, which is the first time the browser harness has
+been used for what it was built for: proving a dependency change did not move the CallBar.
 
 | App | What it is | Notable |
 |---|---|---|

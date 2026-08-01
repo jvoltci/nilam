@@ -80,6 +80,34 @@ jobs:
           touch _site/.nojekyll
           echo "site: $(du -sh _site | cut -f1)"
 
+      # DOES IT FIT ON A PHONE. Nothing in this repository asked that until a reader
+      # found /learn/1-what-is-a-design-system/ scrolling sideways: at a 390px viewport
+      # its document measured 532px, because .nd-chips was a flex row with no flex-wrap
+      # whose items could not shrink below their min-content.
+      #
+      # test/visual.test.mjs structurally cannot catch it. Its narrowest capture is 500px
+      # (below that headless Chrome screenshots a crop of a 500px layout, not a narrow
+      # one) and it captures the demo pages, not this site.
+      #
+      # `npm install --no-save`, NOT npx. The prove job asserts this package has zero
+      # dependencies, runtime and dev, and that assertion is worth more than the
+      # convenience of a devDependency — but npx alone would not work either: it caches the
+      # package in a temp directory, so `import('playwright')` from test/docs-mobile.mjs
+      # would not resolve and the step would die on its own guard. --no-save puts it in
+      # node_modules, which is gitignored, and leaves package.json untouched.
+      - name: Assert no page scrolls sideways on a phone
+        run: |
+          set -euo pipefail
+          npm install --no-save --silent playwright@1
+          npx playwright install --with-deps chromium
+          git diff --exit-code -- package.json \
+            || { echo "::error::installing playwright modified package.json"; exit 1; }
+          python3 -m http.server 8199 --directory _site &
+          for _ in $(seq 1 30); do curl -sf -o /dev/null http://127.0.0.1:8199/ && break; sleep 1; done
+          ln -sfn "$PWD/_site" site
+          node test/docs-mobile.mjs
+          rm -f site
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site

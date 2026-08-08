@@ -926,6 +926,32 @@
 
   .n-spinner-sm { inline-size: 0.875rem; }
   .n-spinner-lg { inline-size: 1.75rem; }
+
+  /* The page-level size, and the only one where twelve sectors can actually be COUNTED.
+   * At 18px each sector is roughly 3.8px of arc: it renders, and the rotation reads
+   * clearly, but you cannot count twelve. This is where the palette gets room to perform,
+   * which is why the story lives here rather than in a degradation rule — an earlier draft
+   * varied the sector count by size using "the largest divisor of twelve that clears a
+   * pixel budget", and was dropped because the budget constant would have been invented.
+   *
+   * The second layer counter-rotates over three cycles, so it drifts against the first
+   * rather than beating with it. Softness is a MASK gradient and never filter: blur() —
+   * blur re-renders the element every frame; a mask rides the compositor. */
+  .n-spinner-xl { inline-size: 4rem; }
+  .n-spinner-xl::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: conic-gradient(from 180deg,
+      transparent 0deg,   var(--loader-3) 120deg,
+      transparent 240deg, var(--loader-6) 330deg, transparent 360deg);
+    opacity: 0.55;
+    -webkit-mask: radial-gradient(closest-side, #000 30%, #0000 78%);
+            mask: radial-gradient(closest-side, #000 30%, #0000 78%);
+    animation: n-spin calc(var(--dur-cycle) * 3) linear infinite reverse;
+  }
+
   /* On a filled surface the ring must come from the ink, not from the neutral ramp. */
   .n-spinner-on-fill { border-color: color-mix(in oklab, var(--brand-ink) 30%, transparent); border-block-start-color: var(--brand-ink); }
 

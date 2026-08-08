@@ -154,35 +154,46 @@
    * The label goes transparent rather than being removed, so the button keeps its width
    * and the row does not reflow when it starts loading. */
   .n-btn[aria-busy='true'] { color: transparent; pointer-events: none; }
+  /* THE ONE PLACE THE DERIVATION DOES NOT REACH, recorded rather than dressed up.
+   *
+   * On a filled button the ground is --brand-9 and the whole brand ramp is invisible on
+   * it, so there is no twelve-step sequence to draw from. This ring is --brand-ink at
+   * evenly-stepped alpha: stop N at 100 - (N-1) x 100/12 percent. Even spacing is a
+   * STATED RULE, not a solved value, and it is the only picked number in the loaders.
+   *
+   * The head stop is full ink, which proveScale already requires to clear 4.5:1 on step 9
+   * — so the leading sector is legible by an assertion that already existed. */
   .n-btn[aria-busy='true']::before {
     content: '';
     position: absolute;
     inline-size: 0.875rem;
-    block-size: 0.875rem;
-    /* border-color, NOT `color`, and this is the bug the first version had. `color` was set
-     * to --brand-ink on the base rule, which is near-white in light mode — so a ghost or
-     * outline button's spinner was white on a transparent background and simply invisible.
-     * Each variant now names its own visible colour. */
-    border: var(--line-2) solid var(--neutral-12);
-    border-block-start-color: transparent;
+    aspect-ratio: 1;
     border-radius: var(--r-full);
-    animation: n-spin 0.6s linear infinite;
+    background: conic-gradient(from 0deg,
+      var(--n-busy-ink)  0deg,
+      color-mix(in oklab, var(--n-busy-ink) 50%, transparent) 180deg,
+      transparent 348deg, transparent 360deg);
+    -webkit-mask: radial-gradient(closest-side, #0000 60%, #000 62%);
+            mask: radial-gradient(closest-side, #0000 60%, #000 62%);
+    animation: n-spin var(--dur-cycle) steps(12) infinite;
   }
-  .n-btn-fill[aria-busy='true']::before,
-  .n-btn-danger[aria-busy='true']::before,
-  .n-btn-ok[aria-busy='true']::before,
-  .n-btn-warn[aria-busy='true']::before { border-color: var(--brand-ink); border-block-start-color: transparent; }
 
-  /* Disabled AND busy at once, which is what a form does the instant it submits. The :disabled
-   * rule wins the background on specificity while the spinner still took --brand-ink, so the
-   * ring was ~1.09:1 on the disabled surface — invisible exactly when it is the only feedback
-   * the user has. Named last so it beats the variant rules above. */
-  .n-btn:disabled[aria-busy='true']::before,
-  .n-btn[aria-disabled='true'][aria-busy='true']::before {
-    border-color: var(--neutral-11);
-    border-block-start-color: transparent;
-  }
-  .n-btn-ink[aria-busy='true']::before { border-color: var(--neutral-1); border-block-start-color: transparent; }
+  /* Each variant names its own visible ink. The first version set `color`, which was
+   * --brand-ink on the base rule — near-white in light mode — so a ghost or outline
+   * button's ring was white on a transparent background and simply invisible. */
+  .n-btn[aria-busy='true'] { --n-busy-ink: var(--neutral-12); }
+  .n-btn-fill[aria-busy='true'],
+  .n-btn-danger[aria-busy='true'],
+  .n-btn-ok[aria-busy='true'],
+  .n-btn-warn[aria-busy='true'] { --n-busy-ink: var(--brand-ink); }
+  .n-btn-ink[aria-busy='true'] { --n-busy-ink: var(--neutral-1); }
+
+  /* Disabled AND busy at once, which is what a form does the instant it submits. The
+   * :disabled rule wins the background on specificity while the ring still took
+   * --brand-ink, so it was ~1.09:1 on the disabled surface — invisible exactly when it is
+   * the only feedback the user has. Named last so it beats the variants above. */
+  .n-btn:disabled[aria-busy='true'],
+  .n-btn[aria-disabled='true'][aria-busy='true'] { --n-busy-ink: var(--neutral-11); }
 
   /* ── loaders ─────────────────────────────────────────────────────────────
    *
@@ -268,8 +279,14 @@
     animation: n-spin calc(var(--dur-cycle) * 3) linear infinite reverse;
   }
 
-  /* On a filled surface the ring must come from the ink, not from the neutral ramp. */
-  .n-spinner-on-fill { border-color: color-mix(in oklab, var(--brand-ink) 30%, transparent); border-block-start-color: var(--brand-ink); }
+  /* On a filled surface the ring comes from the ink, for the same reason as the busy
+     button: the brand ramp is invisible on the brand solid. */
+  .n-spinner-on-fill::before {
+    background: conic-gradient(from 0deg,
+      var(--brand-ink) 0deg,
+      color-mix(in oklab, var(--brand-ink) 50%, transparent) 180deg,
+      transparent 348deg, transparent 360deg);
+  }
 
   @keyframes n-spin { to { rotate: 360deg; } }
 

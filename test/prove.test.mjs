@@ -19,7 +19,7 @@ import { execFileSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { solvePalette, solveSemanticHues, inkFor, NILAM_HUE, GLOW_L } from '../src/solve.mjs';
+import { solvePalette, solveSemanticHues, inkFor, NILAM_HUE, GLOW_L, solveLoaderRamp } from '../src/solve.mjs';
 import { prove, proveStatusChannels, proveDichromacy } from '../src/prove.mjs';
 import { contrast, contrastIn, hexToOklch, toHex, fmt, fmtIn, gammaDecode, maxChroma, maxChromaIn } from '../src/colour.mjs';
 import { toCss } from '../src/css.mjs';
@@ -233,6 +233,32 @@ for (const mode of ['light', 'dark']) {
     check(p3Ratio(ink, at(9)) >= 4.5,
       `P3 ${mode}/${fam}: --${fam}-ink is ${p3Ratio(ink, at(9)).toFixed(2)}:1 on the solid as emitted — the button cannot be labelled`);
   }
+
+  /* --loader-N specifically, parsed from p3Tokens the same way as the families just above —
+   * i.e. from p3Section, the slice that starts at "@media (color-gamut: p3)", not from cssP3
+   * as a whole. That distinction is the whole point of this block.
+   *
+   * p3Block() only ever looped over FAMILIES; loaderRamp() was added later as a sibling
+   * function and never wired into it, so --loader-N stayed pinned to its sRGB value forever
+   * on a P3 display — silently breaking "twelve aliases, no new colours" for exactly the
+   * readers the block exists for. The `--loader-${n} is missing from nilam.tokens.css` check
+   * further down this file does a bare substring search over the WHOLE file and cannot tell
+   * which media block matched, so it stayed green throughout. This one can tell, because
+   * p3Tokens can only contain a key if the regex matched inside p3Section. */
+  for (let n = 1; n <= 12; n++) {
+    const key = `loader-${n}`;
+    const v = p3Tokens[mode].get(key);
+    check(
+      v != null,
+      `P3 ${mode}: --${key} is missing from the @media (color-gamut: p3) block — it is still pinned to its sRGB value on a P3 display`,
+    );
+    if (v) {
+      check(
+        v.length === 3 && v.every((c) => Number.isFinite(c) && c >= 0 && c <= 1),
+        `P3 ${mode}: --${key} is ${JSON.stringify(v)} — a channel outside [0,1] means the gamut clamp did not run`,
+      );
+    }
+  }
 }
 
 /* P3 must actually BUY something, or the whole block is 9 kB of duplication. It must also
@@ -333,6 +359,25 @@ if (existsSync(join(root, 'nilam.css'))) {
   check(layerDecls === 1, `the bundle declares the layer order ${layerDecls} times, expected exactly 1`);
 }
 
+/* The tokens must reach the FILE, not just the solver. achroma shipped a whole layer
+ * that existed in the repo and not in the package; every colour assertion was green. */
+{
+  const tokensCss = readFileSync(join(root, 'nilam.tokens.css'), 'utf8');
+  for (let n = 1; n <= 12; n++) {
+    check(
+      new RegExp(`--loader-${n}:\\s*light-dark\\(`).test(tokensCss),
+      `--loader-${n} is missing from nilam.tokens.css, or is not emitted with light-dark()`,
+    );
+  }
+  check(
+    !/--loader-13:/.test(tokensCss),
+    'a --loader-13 was emitted; the ramp is twelve steps because the scale is',
+  );
+
+  const bundle = readFileSync(join(root, 'nilam.css'), 'utf8');
+  check(/--loader-1:/.test(bundle), '--loader-1 is in nilam.tokens.css but not in the nilam.css bundle');
+}
+
 /* Every status variant in the component layer must actually paint a glyph, because
  * assertion 3 promises the channel exists and only this checks that it does. */
 const components = readFileSync(join(root, 'nilam.components.css'), 'utf8');
@@ -423,14 +468,82 @@ for (const status of ['ok', 'warn', 'danger', 'info']) {
    * off-by-one that reported three real, correct rules as missing. */
   const reduce = (/@media \(prefers-reduced-motion: reduce\)([\s\S]*)$/.exec(code)?.[1] ?? '')
     .replace(/^\s*\{/, '');
-  for (const sel of ['.n-spinner', '.n-skeleton', '.n-bar::after', '.n-dots i']) {
+  /* Two ways to keep an animation infinite under reduce, and both are legitimate:
+   * LONGHAND (separate animation-duration / animation-iteration-count overrides) for an
+   * element with exactly one animation, or the `animation:` SHORTHAND when an element
+   * carries more than one at once — .n-spinner gained a second (n-wake, n-persist) in the
+   * elapsed-time work, and a longhand `animation-duration: X !important` would apply to
+   * BOTH animations on the element at once rather than to the one meant to change. See
+   * test/motion.test.mjs, which runs the same check across the whole stylesheet instead of
+   * this hard-coded selector list. */
+  /* `m[1].includes(sel)` was a SUBSTRING test on the raw selector-list text, not a match
+   * against an actual selector. For sel = '.n-spinner' that matched two things it should
+   * not have: '.n-spinner::before' (which merely has '.n-spinner' as a text prefix) AND —
+   * fatally — the literal, exact selector list of the new elapsed-time rule
+   * `.n-spinner, .n-bar { animation: n-wake ..., n-persist ... infinite ... !important }`.
+   * That rule's own `infinite !important` is legitimate (it keeps the 10s persist pulse
+   * alive), but merging its declarations into the same bucket as '.n-spinner::before' meant
+   * deleting the ring's actual breathe exemption still left enough text to satisfy the
+   * shorthand check — the guard was blind to exactly the regression it exists to catch.
+   * Split each rule's selector list on commas and require an EXACT (trimmed) match, and
+   * check '.n-spinner::before' — the selector that actually carries the ring's rotation
+   * exemption — as its own entry instead of letting '.n-spinner' stand in for it. */
+  for (const sel of ['.n-spinner::before', '.n-spinner', '.n-skeleton', '.n-bar::after', '.n-dots i']) {
     const blocks = [...reduce.matchAll(/([^{}]+)\{([^}]*)\}/g)]
-      .filter((m) => m[1].includes(sel)).map((m) => m[2]).join(' ');
-    check(/animation-duration:[^;]*!important/.test(blocks),
-      `${sel} has no !important animation-duration under reduce — nilam.base pins it to 0.01ms and it freezes`);
-    check(/animation-iteration-count:\s*infinite\s*!important/.test(blocks),
-      `${sel} has no !important animation-iteration-count under reduce — nilam.base pins it to 1, so it runs once and settles`);
+      .filter((m) => m[1].split(',').some((s) => s.trim() === sel)).map((m) => m[2]).join(' ');
+    const usesLonghand = /animation-duration:[^;]*!important/.test(blocks)
+      && /animation-iteration-count:\s*infinite\s*!important/.test(blocks);
+    const usesShorthand = /animation:\s*[^;]*\binfinite\b[^;]*!important/.test(blocks);
+    const isTimed = /animation:\s*n-(wake|slow-reveal)/.test(blocks);
+    check(usesLonghand || usesShorthand || isTimed,
+      `${sel} has no !important animation override under reduce that keeps it infinite — nilam.base pins duration to 0.01ms and iteration-count to 1, so it freezes after one run`);
   }
+}
+
+/* ── loader ramp ─────────────────────────────────────────────────────────
+ *
+ * The ordering must be COMPUTED. A hand-written order stays green forever while
+ * silently becoming wrong for any hue but 285 — the exact failure mode this
+ * package exists to prevent.
+ */
+{
+  const p = solvePalette(NILAM_HUE, { semanticHues: solveSemanticHues(NILAM_HUE).hues });
+
+  for (const mode of ['light', 'dark']) {
+    const order = solveLoaderRamp(p[mode].brand, p[mode].neutral[1]);
+
+    check(order.length === 12, `${mode}: loader ramp has ${order.length} entries, needs 12`);
+    check(new Set(order).size === 12, `${mode}: loader ramp repeats a step — ${order.join(',')}`);
+    check(
+      [...order].sort((a, b) => a - b).join(',') === '1,2,3,4,5,6,7,8,9,10,11,12',
+      `${mode}: loader ramp is not a permutation of the twelve steps — ${order.join(',')}`,
+    );
+
+    for (let i = 1; i < 12; i++) {
+      /* contrastIn(..., 'srgb'), not contrast() — contrast() hardcodes WCAG's published
+       * luminance weights, while contrastIn() and solveLoaderRamp() itself both use more
+       * precise weights that disagree with those by about 5e-5. Harmless while every gap
+       * here is large, but a future hue whose steps land in a near-tie could make this
+       * check disagree with the sort it is grading, and report a false ordering violation
+       * on correctly-ordered colours. Use what solveLoaderRamp used to sort. */
+      const hi = contrastIn(p[mode].brand[order[i - 1]], p[mode].neutral[1], 'srgb');
+      const lo = contrastIn(p[mode].brand[order[i]], p[mode].neutral[1], 'srgb');
+      check(
+        hi >= lo,
+        `${mode}: loader ramp is not descending by contrast at position ${i}: ` +
+          `step ${order[i - 1]} is ${hi.toFixed(4)}:1 but step ${order[i]} is ${lo.toFixed(4)}:1`,
+      );
+    }
+
+    check(order[11] === 1, `${mode}: the tail of the ramp is step ${order[11]}, not step 1 ` +
+      `— step 1 IS the page tint, so it must always have the least contrast against the page`);
+  }
+
+  /* Determinism: the same input must give the same order, every time. A sort with an
+   * unstable tie-break would emit different CSS on different runs. */
+  const a = solveLoaderRamp(p.light.brand, p.light.neutral[1]).join(',');
+  const b = solveLoaderRamp(p.light.brand, p.light.neutral[1]).join(',');
+  check(a === b, 'loader ramp ordering is not deterministic across two identical calls');
 }
 
 /* ── report ──────────────────────────────────────────────────────────────── */

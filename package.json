@@ -1,6 +1,6 @@
 {
   "name": "nilam",
-  "version": "0.6.1",
+  "version": "0.7.0",
   "description": "Proven colour. A design system whose palette is solved from contrast requirements and verified under three kinds of colour blindness.",
   "keywords": [
     "design-system",
@@ -73,7 +73,7 @@
   ],
   "scripts": {
     "build": "node build.mjs",
-    "test": "node test/prove.test.mjs && node test/dtcg.test.mjs && node test/behaviours.test.mjs && node test/surfaces.test.mjs",
+    "test": "node test/prove.test.mjs && node test/dtcg.test.mjs && node test/behaviours.test.mjs && node test/surfaces.test.mjs && node test/motion.test.mjs",
     "prepublishOnly": "node build.mjs && node test/prove.test.mjs",
     "hero": "node assets/hero.mjs",
     "test:visual": "node test/visual.test.mjs",

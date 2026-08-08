@@ -121,6 +121,20 @@
     --dur-2: 240ms;
     --dur-3: 400ms;
 
+    /* ── the loader clock ──────────────────────────────────────────────────
+     *
+     * Every loader in the system moves on one tick and cycles in twelve of them. 100ms is
+     * Miller's instantaneity limit — the interval below which people stop perceiving
+     * discrete events as separate (Miller 1968; Nielsen's 0.1s/1s/10s). Twelve is the
+     * scale. So the cycle is derived twice over, and it is the reason five different
+     * shapes read as siblings.
+     *
+     * --dur-cycle is what a loader repeats on. It is NOT --dur-3: those are for a thing
+     * that travels a distance once, and get eased. A loader repeats forever and is linear
+     * or stepped. */
+    --dur-tick: 100ms;
+    --dur-cycle: 1.2s;   /* twelve ticks */
+
     /* ease-out for anything entering (fast then settling reads as arriving), and the
        spring for anything the user directly caused, which is where a little overshoot
        reads as physical rather than as decoration. */

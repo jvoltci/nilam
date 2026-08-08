@@ -154,35 +154,46 @@
    * The label goes transparent rather than being removed, so the button keeps its width
    * and the row does not reflow when it starts loading. */
   .n-btn[aria-busy='true'] { color: transparent; pointer-events: none; }
+  /* THE ONE PLACE THE DERIVATION DOES NOT REACH, recorded rather than dressed up.
+   *
+   * On a filled button the ground is --brand-9 and the whole brand ramp is invisible on
+   * it, so there is no twelve-step sequence to draw from. This ring is --brand-ink at
+   * evenly-stepped alpha: stop N at 100 - (N-1) x 100/12 percent. Even spacing is a
+   * STATED RULE, not a solved value, and it is the only picked number in the loaders.
+   *
+   * The head stop is full ink, which proveScale already requires to clear 4.5:1 on step 9
+   * — so the leading sector is legible by an assertion that already existed. */
   .n-btn[aria-busy='true']::before {
     content: '';
     position: absolute;
     inline-size: 0.875rem;
-    block-size: 0.875rem;
-    /* border-color, NOT `color`, and this is the bug the first version had. `color` was set
-     * to --brand-ink on the base rule, which is near-white in light mode — so a ghost or
-     * outline button's spinner was white on a transparent background and simply invisible.
-     * Each variant now names its own visible colour. */
-    border: var(--line-2) solid var(--neutral-12);
-    border-block-start-color: transparent;
+    aspect-ratio: 1;
     border-radius: var(--r-full);
-    animation: n-spin 0.6s linear infinite;
+    background: conic-gradient(from 0deg,
+      var(--n-busy-ink)  0deg,
+      color-mix(in oklab, var(--n-busy-ink) 50%, transparent) 180deg,
+      transparent 348deg, transparent 360deg);
+    -webkit-mask: radial-gradient(closest-side, #0000 60%, #000 62%);
+            mask: radial-gradient(closest-side, #0000 60%, #000 62%);
+    animation: n-spin var(--dur-cycle) steps(12) infinite;
   }
-  .n-btn-fill[aria-busy='true']::before,
-  .n-btn-danger[aria-busy='true']::before,
-  .n-btn-ok[aria-busy='true']::before,
-  .n-btn-warn[aria-busy='true']::before { border-color: var(--brand-ink); border-block-start-color: transparent; }
 
-  /* Disabled AND busy at once, which is what a form does the instant it submits. The :disabled
-   * rule wins the background on specificity while the spinner still took --brand-ink, so the
-   * ring was ~1.09:1 on the disabled surface — invisible exactly when it is the only feedback
-   * the user has. Named last so it beats the variant rules above. */
-  .n-btn:disabled[aria-busy='true']::before,
-  .n-btn[aria-disabled='true'][aria-busy='true']::before {
-    border-color: var(--neutral-11);
-    border-block-start-color: transparent;
-  }
-  .n-btn-ink[aria-busy='true']::before { border-color: var(--neutral-1); border-block-start-color: transparent; }
+  /* Each variant names its own visible ink. The first version set `color`, which was
+   * --brand-ink on the base rule — near-white in light mode — so a ghost or outline
+   * button's ring was white on a transparent background and simply invisible. */
+  .n-btn[aria-busy='true'] { --n-busy-ink: var(--neutral-12); }
+  .n-btn-fill[aria-busy='true'],
+  .n-btn-danger[aria-busy='true'],
+  .n-btn-ok[aria-busy='true'],
+  .n-btn-warn[aria-busy='true'] { --n-busy-ink: var(--brand-ink); }
+  .n-btn-ink[aria-busy='true'] { --n-busy-ink: var(--neutral-1); }
+
+  /* Disabled AND busy at once, which is what a form does the instant it submits. The
+   * :disabled rule wins the background on specificity while the ring still took
+   * --brand-ink, so it was ~1.09:1 on the disabled surface — invisible exactly when it is
+   * the only feedback the user has. Named last so it beats the variants above. */
+  .n-btn:disabled[aria-busy='true'],
+  .n-btn[aria-disabled='true'][aria-busy='true'] { --n-busy-ink: var(--neutral-11); }
 
   /* ── loaders ─────────────────────────────────────────────────────────────
    *
@@ -198,24 +209,111 @@
    * nothing about what is arriving; a skeleton tells them where to look when it does.
    */
 
+  /* Twelve sectors, one per scale step, ordered by contrast against the page. The trail
+   * fade is not an opacity trick — it IS steps 1-3 being genuinely quiet. Ask why twelve
+   * and the answer is the same as why the scale has twelve.
+   *
+   * THE ELEMENT DOES NOT ROTATE; its ::before does. That split is load-bearing: the
+   * element carries the elapsed-time animations (n-wake, n-persist) and .n-spinner-xl
+   * adds a counter-rotating ::after. With rotation on the element, all three would
+   * compound and the xl layer would be dragged round by the layer beneath it.
+   *
+   * steps(12) rather than linear, so it ticks one sector per --dur-tick like the macOS
+   * spinner instead of gliding. Each tick moves the pattern by exactly one sector, which
+   * is what makes a ring of twelve DIFFERENT colours read as marching rather than static.
+   *
+   * Rotation is a transform, so it composites. Animating the gradient's stops instead
+   * would repaint the whole element every frame for the same picture. */
   .n-spinner {
+    position: relative;
     display: inline-block;
     flex: none;
     inline-size: 1.125rem;
-    block-size: 1.125rem;
-    border: var(--line-2) solid var(--neutral-6);
-    /* One arc in a stronger colour is what makes rotation legible. A ring of uniform
-       colour rotating looks static. */
-    border-block-start-color: var(--brand-9);
+    aspect-ratio: 1;
     border-radius: var(--r-full);
-    animation: n-spin 0.6s linear infinite;
+    -webkit-mask: radial-gradient(closest-side, #0000 62%, #000 64%);
+            mask: radial-gradient(closest-side, #0000 62%, #000 64%);
+    animation: n-wake var(--dur-cycle) var(--ease-out) 1 both,
+               n-persist 2.4s var(--ease-in-out) infinite 10s;
   }
-  .n-spinner-sm { inline-size: 0.875rem; block-size: 0.875rem; border-width: var(--line-1); }
-  .n-spinner-lg { inline-size: 1.75rem; block-size: 1.75rem; }
-  /* On a filled surface the ring must come from the ink, not from the neutral ramp. */
-  .n-spinner-on-fill { border-color: color-mix(in oklab, var(--brand-ink) 30%, transparent); border-block-start-color: var(--brand-ink); }
+  .n-spinner::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: conic-gradient(from 0deg,
+      var(--loader-1)    0     30deg,  var(--loader-2)  30deg  60deg,
+      var(--loader-3)   60deg  90deg,  var(--loader-4)  90deg 120deg,
+      var(--loader-5)  120deg 150deg,  var(--loader-6) 150deg 180deg,
+      var(--loader-7)  180deg 210deg,  var(--loader-8) 210deg 240deg,
+      var(--loader-9)  240deg 270deg, var(--loader-10) 270deg 300deg,
+      var(--loader-11) 300deg 330deg, var(--loader-12) 330deg 360deg);
+    animation: n-spin var(--dur-cycle) steps(12) infinite;
+  }
+
+  .n-spinner-sm { inline-size: 0.875rem; }
+  .n-spinner-lg { inline-size: 1.75rem; }
+
+  /* The page-level size, and the only one where twelve sectors can actually be COUNTED.
+   * At 18px each sector is roughly 3.8px of arc: it renders, and the rotation reads
+   * clearly, but you cannot count twelve. This is where the palette gets room to perform,
+   * which is why the story lives here rather than in a degradation rule — an earlier draft
+   * varied the sector count by size using "the largest divisor of twelve that clears a
+   * pixel budget", and was dropped because the budget constant would have been invented.
+   *
+   * The second layer counter-rotates over three cycles, so it drifts against the first
+   * rather than beating with it. Softness is a MASK gradient and never filter: blur() —
+   * blur re-renders the element every frame; a mask rides the compositor. */
+  .n-spinner-xl { inline-size: 4rem; }
+  .n-spinner-xl::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: conic-gradient(from 180deg,
+      transparent 0deg,   var(--loader-3) 120deg,
+      transparent 240deg, var(--loader-6) 330deg, transparent 360deg);
+    opacity: 0.55;
+    -webkit-mask: radial-gradient(closest-side, #000 30%, #0000 78%);
+            mask: radial-gradient(closest-side, #000 30%, #0000 78%);
+    animation: n-spin calc(var(--dur-cycle) * 3) linear infinite reverse;
+  }
+
+  /* On a filled surface the ring comes from the ink, for the same reason as the busy
+     button: the brand ramp is invisible on the brand solid. */
+  .n-spinner-on-fill::before {
+    background: conic-gradient(from 0deg,
+      var(--brand-ink) 0deg,
+      color-mix(in oklab, var(--brand-ink) 50%, transparent) 180deg,
+      transparent 348deg, transparent 360deg);
+  }
 
   @keyframes n-spin { to { rotate: 360deg; } }
+
+  /* ── elapsed time, made visible ───────────────────────────────────────────
+   *
+   * Miller gave three thresholds and most systems use none of them. All three here, with
+   * no JavaScript, no timers and no state — just a second animation with a delay.
+   *
+   *   0 - 1.2s   quiet      under the flow-of-thought limit the wait is not worth
+   *                         shouting about, so a request that resolves in 300ms shows a
+   *                         faint indicator that never brightens instead of a full flash
+   *   1.2s+      present    n-wake has finished; exactly one revolution
+   *   10s+       persist    the attention limit; a slow breath says it has not hung
+   *
+   * ALL THREE ANIMATE OPACITY ONLY. That is deliberate and not just economy: opacity is
+   * exactly what the reduced-motion exemption preserves, so these are safe under `reduce`
+   * by construction rather than by remembering to exempt them.
+   *
+   * The alternative considered and rejected was the usual "delay the spinner by N
+   * milliseconds". The field ranges from 100ms to 600ms with no derivable value, and
+   * inventing one is the thing this package exists not to do. */
+  @keyframes n-wake    { from { opacity: 0.3; } to { opacity: 1; } }
+  @keyframes n-persist { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+  @keyframes n-slow-reveal {
+    0%, 99.9% { visibility: hidden; opacity: 0; }
+    100%      { visibility: visible; opacity: 1; }
+  }
 
   /* Determinate. The element is <progress>, so the value is in the accessibility tree for
      free and no aria-valuenow needs maintaining. appearance:none then rebuilds it, and
@@ -232,11 +330,14 @@
   }
   .n-progress::-webkit-progress-bar { background: var(--neutral-4); border-radius: var(--r-full); }
   .n-progress::-webkit-progress-value {
-    background: var(--brand-9);
+    background: linear-gradient(90deg, var(--loader-6), var(--loader-1));
     border-radius: var(--r-full);
     transition: inline-size var(--dur-2) var(--ease-out);
   }
-  .n-progress::-moz-progress-bar { background: var(--brand-9); border-radius: var(--r-full); }
+  .n-progress::-moz-progress-bar {
+    background: linear-gradient(90deg, var(--loader-6), var(--loader-1));
+    border-radius: var(--r-full);
+  }
 
   /* Indeterminate bar. A <progress> with no value attribute is already indeterminate to
      assistive tech, so this styles that state rather than inventing a widget. */
@@ -248,15 +349,22 @@
     border-radius: var(--r-full);
     background: var(--neutral-4);
     overflow: hidden;
+    animation: n-wake var(--dur-cycle) var(--ease-out) 1 both,
+               n-persist 2.4s var(--ease-in-out) infinite 10s;
   }
+  /* The travelling block is the ramp itself. Duration is --dur-cycle so it shares the
+   * clock, but the slide is SMOOTH, not steps(12): stepping is right where one tick moves
+   * a small arc and wrong for anything that travels a distance, where twelve large
+   * position jumps read as juddering rather than as ticking. */
   .n-bar::after {
     content: '';
     position: absolute;
     inset-block: 0;
-    inline-size: 40%;
+    inline-size: 42%;
     border-radius: inherit;
-    background: var(--brand-9);
-    animation: n-slide 1.4s var(--ease-in-out) infinite;
+    background: linear-gradient(90deg,
+      var(--loader-12), var(--loader-8), var(--loader-4), var(--loader-1));
+    animation: n-slide var(--dur-cycle) var(--ease-in-out) infinite;
   }
   @keyframes n-slide {
     0%   { translate: -110% 0; }
@@ -265,15 +373,17 @@
 
   /* Three dots, for inline "typing"/thinking states where a ring is too heavy. */
   .n-dots { display: inline-flex; gap: 0.25rem; align-items: center; }
+  /* Three points on the same ramp, staggered by one tick. Was 0.15s/0.3s, which belonged
+     to no clock. */
   .n-dots i {
     inline-size: 0.3125rem;
     block-size: 0.3125rem;
     border-radius: var(--r-full);
-    background: var(--neutral-11);
-    animation: n-pulse 1.2s var(--ease-in-out) infinite;
+    animation: n-pulse var(--dur-cycle) var(--ease-in-out) infinite;
   }
-  .n-dots i:nth-child(2) { animation-delay: 0.15s; }
-  .n-dots i:nth-child(3) { animation-delay: 0.3s; }
+  .n-dots i:nth-child(1) { background: var(--loader-1); }
+  .n-dots i:nth-child(2) { background: var(--loader-3); animation-delay: var(--dur-tick); }
+  .n-dots i:nth-child(3) { background: var(--loader-5); animation-delay: calc(var(--dur-tick) * 2); }
   @keyframes n-pulse {
     0%, 60%, 100% { opacity: 0.3; scale: 0.8; }
     30%           { opacity: 1;   scale: 1; }
@@ -293,6 +403,20 @@
     gap: var(--space-2);
     font-size: var(--text-0);
     color: var(--neutral-11);
+  }
+
+  /* Optional. An author who does not add a .n-slow element gets nothing extra and nothing
+   * breaks. Inside .n-loading — which is role="status", so aria-live="polite" — the
+   * visibility flip is intended to both reveal it and announce it.
+   *
+   * THE ANNOUNCEMENT IS NOT VERIFIED. visibility:hidden should keep it out of the
+   * accessibility tree and adding it back should trigger the live region. That is a belief
+   * about live-region behaviour, not a tested fact; see Task 14. The visual reveal stands
+   * on its own either way. */
+  .n-loading .n-slow {
+    visibility: hidden;
+    opacity: 0;
+    animation: n-slow-reveal 10s linear 1 both;
   }
 
   /* ── field ──────────────────────────────────────────────────────────────── */
@@ -940,7 +1064,7 @@
     background: linear-gradient(90deg, var(--neutral-5) 25%, var(--neutral-7) 50%, var(--neutral-5) 75%);
     background-size: 200% 100%;
     border-radius: var(--r-2);
-    animation: n-shimmer 1.4s ease-in-out infinite;
+    animation: n-shimmer var(--dur-cycle) ease-in-out infinite;
   }
   @keyframes n-shimmer { to { background-position: -200% 0; } }
 

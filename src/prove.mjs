@@ -11,7 +11,7 @@
 import {
   contrast, contrastIn, distance, inGamut, inGamutOf, simulate, fmt, toHex, CVD_TYPES,
 } from './colour.mjs';
-import { inkFor } from './solve.mjs';
+import { inkFor, solveLoaderRamp } from './solve.mjs';
 
 const failures = [];
 const notes = [];
@@ -288,6 +288,52 @@ export function proveSalience(mode, palette, gamut = 'srgb') {
   notes.push(`${mode}: brand solid ${brand.toFixed(2)}:1 on page, chroma ${brandChroma.toFixed(3)} (neutral solid ${neutral.toFixed(2)}:1, chroma ${neutralChroma.toFixed(3)})`);
 }
 
+/* ── the loader ramp ──────────────────────────────────────────────────────
+ *
+ * Three assertions, and the third is the one that matters.
+ *
+ * --loader-1 is the head of the trail: the single sector that must always be findable, on
+ * the page and on a card. Both grounds are measured SEPARATELY. Measuring only against the
+ * page is the closed loop that let step 7 report 3.05:1 while painting 2.70:1 on a card,
+ * and it is the reason this file exists in the shape it does.
+ *
+ * Nothing is asserted against a filled button. That ring is drawn from --brand-ink, not
+ * from this ramp, and proveScale already requires ink to clear 4.5:1 on step 9. An earlier
+ * draft asked for it here, which would have measured a colour never painted there.
+ */
+export function proveLoaderRamp(mode, palette, gamut = 'srgb') {
+  const brand = palette[mode].brand;
+  const neutral = palette[mode].neutral;
+  const order = solveLoaderRamp(brand, neutral[1], gamut);
+
+  // 1. a permutation — no value invented, none dropped, none repeated
+  const sorted = [...order].sort((a, b) => a - b).join(',');
+  check(
+    sorted === '1,2,3,4,5,6,7,8,9,10,11,12',
+    `${gamut} ${mode}: the loader ramp is not a permutation of the twelve brand steps (${order.join(',')}) — a loader would paint a colour the palette never solved`,
+  );
+
+  // 2. strictly ordered by the thing it claims to be ordered by
+  for (let i = 1; i < order.length; i++) {
+    const hi = contrastIn(brand[order[i - 1]], neutral[1], gamut);
+    const lo = contrastIn(brand[order[i]], neutral[1], gamut);
+    check(
+      hi >= lo,
+      `${gamut} ${mode}: loader ramp position ${i} breaks the ordering — step ${order[i - 1]} is ${hi.toFixed(4)}:1 against the page and step ${order[i]} is ${lo.toFixed(4)}:1`,
+    );
+  }
+
+  // 3. the head is findable on BOTH grounds, measured independently
+  const head = brand[order[0]];
+  for (const [where, ground] of [['the page', neutral[1]], ['a card', neutral.surface]]) {
+    const r = contrastIn(head, ground, gamut);
+    check(
+      r >= 3.0,
+      `${gamut} ${mode}: --loader-1 (brand step ${order[0]}) is ${r.toFixed(4)}:1 on ${where}, needs 3.0 — the leading sector of every spinner in the system is not findable there (WCAG 1.4.11)`,
+    );
+  }
+}
+
 /* ── run ─────────────────────────────────────────────────────────────── */
 
 export function prove(palette, { strictBrandHue = false } = {}) {
@@ -298,6 +344,7 @@ export function prove(palette, { strictBrandHue = false } = {}) {
     }
     proveDichromacy(mode, palette, { strictBrandHue });
     proveSalience(mode, palette, palette.gamut ?? 'srgb');
+    proveLoaderRamp(mode, palette, palette.gamut ?? 'srgb');
   }
   return { count, failures: [...failures], notes: [...notes] };
 }

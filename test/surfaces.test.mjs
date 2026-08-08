@@ -40,7 +40,7 @@ import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { solveScale } from '../src/solve.mjs';
+import { solveScale, solveLoaderRamp } from '../src/solve.mjs';
 import { contrast } from '../src/colour.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -96,9 +96,9 @@ const SURFACES = [
   // tracks. ALL FOUR carry --neutral-7 now; .n-slider-track was the one that did not.
   ['.n-progress',                    'neutral-4',  'both',   'bounded', 'neutral-7 border'],
   ['.n-progress-bar',                'neutral-4',  'both',   'bounded', 'neutral-7 border'],
-  ['.n-progress-value',              'brand-9',    'nested', 'solid',   'neutral-4'],
+  ['.n-progress-value',              'loader-1',   'nested', 'solid',   'neutral-4'],
   ['.n-bar',                         'neutral-4',  'both',   'bounded', 'neutral-7 border'],
-  ['.n-bar::after',                  'brand-9',    'nested', 'solid',   'neutral-4'],
+  ['.n-bar::after',                  'loader-1',   'nested', 'solid',   'neutral-4'],
   ['.n-meter',                       'neutral-4',  'both',   'bounded', 'neutral-7 border'],
   ['.n-meter-fill',                  'brand-9',    'nested', 'solid',   'neutral-4'],
   ['.n-meter-ok-fill',               'ok-10',      'nested', 'solid',   'neutral-4'],
@@ -107,7 +107,41 @@ const SURFACES = [
   ['.n-slider-track',                'void',       'both',   'bounded', 'neutral-7 border'],
   ['.n-slider-fill',                 'brand-9',    'nested', 'solid',   'void'],
   ['.n-slider-disabled-fill',        'neutral-7',  'nested', 'bounded', 'void'],
-  ['.n-dots-i',                      'neutral-11', 'both',   'solid',   null],
+  ['.n-dots-i',                      'loader-1',   'both',   'solid',   null],
+
+  /* The loader ramp. Only --loader-1 has to be findable: it is the head of the trail and
+   * proveLoaderRamp already asserts it at 3:1 on both the page and a card. The remaining
+   * eleven ARE the fade — a tail that met 3:1 would not be a tail — so they are classified
+   * against the head that carries the extent, not against whatever they happen to sit on.
+   * loader-1 itself is checked directly here (via: null measures the fill), rather than
+   * through a `via` string, because the only real channel IS the fill in this case. */
+  ['.n-spinner::before',             'loader-1',   'both',   'ident',   null],
+  ['.n-spinner::before (tail)',      'loader-2',   'nested', 'decor',   'loader-1 carries the ring'],
+  ['.n-spinner-xl::after',           'loader-3',   'nested', 'decor',   'the ring beneath it carries the signal'],
+  ['.n-bar::after (fade)',           'loader-4',   'nested', 'decor',   'loader-1 carries the ring'],
+  ['.n-spinner::before (fade 5)',    'loader-5',   'nested', 'decor',   'loader-1 carries the ring'],
+  ['.n-spinner-xl::after (2)',       'loader-6',   'nested', 'decor',   'the ring beneath it carries the signal'],
+  ['.n-spinner::before (fade 7)',    'loader-7',   'nested', 'decor',   'loader-1 carries the ring'],
+  ['.n-bar::after (fade 2)',         'loader-8',   'nested', 'decor',   'loader-1 carries the ring'],
+  ['.n-spinner::before (fade 9)',    'loader-9',   'nested', 'decor',   'loader-1 carries the ring'],
+  ['.n-spinner::before (fade 10)',   'loader-10',  'nested', 'decor',   'loader-1 carries the ring'],
+  ['.n-spinner::before (fade 11)',   'loader-11',  'nested', 'decor',   'loader-1 carries the ring'],
+  ['.n-bar::after (tail)',           'loader-12',  'nested', 'decor',   'loader-1 carries the ring'],
+
+  /* --n-busy-ink is a custom property, not a palette token, so this audit's gradient
+   * extraction cannot see the four rules that ASSIGN it per variant (--neutral-12 default,
+   * --brand-ink filled/status, --neutral-1 on .n-btn-ink, --neutral-11 disabled) — only the
+   * one background: declaration that consumes it. Checked against the default, the one
+   * variant painted directly on the page or a card; the filled-variant case is covered
+   * independently by proveScale's ink-vs-9 contract (see the comment beside the rule in
+   * nilam.components.css). */
+  ['.n-btn[aria-busy=\'true\']::before', 'n-busy-ink', 'both', 'ident', null],
+
+  /* Pre-existing and never classified, because the old regex could not see into a
+     gradient. Steps 5 and 7 are a solved defect fix: in dark, --surface and --neutral-3
+     have identical lightness (1.0009:1), so a step-3 skeleton was invisible on a card. */
+  ['.n-skeleton',                    'neutral-5',  'both',   'decor',   'neutral-7 shimmer stop'],
+  ['.n-skeleton (shimmer)',          'neutral-7',  'both',   'decor',   'the travelling stop'],
 
   // form controls
   ['.n-select',                      'neutral-1',  'both',   'bounded', 'neutral-7 border'],
@@ -205,6 +239,15 @@ for (const mode of ['light', 'dark']) {
   for (const f of families) byFamily[mode][f] = solveScale(285, mode, { neutral: f === 'neutral' });
 }
 
+/* --loader-N is not a family: it is an ORDERING over --brand-N, computed the same way
+ * css.mjs computes it for the shipped tokens. Re-deriving it here rather than hard-coding
+ * the ranks is what keeps this resolvable at a different hue — a hard-coded "--loader-1 is
+ * brand-9" would silently go stale the moment solveLoaderRamp's ordering changed. */
+const loaderOrder = {
+  light: solveLoaderRamp(byFamily.light.brand, scales.light[1]),
+  dark: solveLoaderRamp(byFamily.dark.brand, scales.dark[1]),
+};
+
 /** Resolve a token name like 'brand-3' / 'surface' / 'void' / 'brand-ink' to an OKLCH triple. */
 function tok(name, mode) {
   if (name === 'surface') return scales[mode].surface;
@@ -212,6 +255,18 @@ function tok(name, mode) {
   // never measured; returning the page keeps the resolver total rather than throwing.
   if (name === 'scrim') return scales[mode][1];
   if (name === 'void') return mode === 'light' ? { L: 0.9, C: 0.007, h: 285 } : { L: 0.1, C: 0.007, h: 285 };
+  // --loader-N aliases whichever --brand-N step has the Nth-highest contrast against the
+  // page in this mode.
+  const loaderMatch = name.match(/^loader-(\d+)$/);
+  if (loaderMatch) return byFamily[mode].brand[loaderOrder[mode][Number(loaderMatch[1]) - 1]];
+  // The busy-button ring's ink is a custom property (--n-busy-ink) chosen per variant —
+  // --neutral-12 default, --brand-ink on a filled/status button, --neutral-1 on
+  // .n-btn-ink, --neutral-11 disabled — by rules this audit's gradient extraction cannot
+  // see through (only the ONE background: declaration that consumes the variable is
+  // visible, not the four that assign it). Resolved to the default, the one variant
+  // painted directly on the page or a card; see the SURFACES row for why the others are
+  // not re-checked here.
+  if (name === 'n-busy-ink') return tok('neutral-12', mode);
   const m = name.match(/^([a-z]+)-(\d+|ink)$/);
   if (!m) throw new Error(`unclassifiable token: ${name}`);
   const [, family, step] = m;
@@ -235,8 +290,16 @@ const rawCss = ['nilam.components.css', 'nilam.widgets.css']
  * depends on the wording of a comment is not measuring the stylesheet. */
 const css = rawCss.replace(/\/\*[\s\S]*?\*\//g, '');
 
+/* Tokens painted as a background, INCLUDING inside a gradient.
+ *
+ * The original pattern only matched `background: var(--x)`, so anything inside a
+ * linear-gradient() or conic-gradient() was invisible to this audit. .n-skeleton has
+ * painted --neutral-5 and --neutral-7 since 0.5.0 and was never classified, and nothing
+ * said so. An audit with a blind spot the size of "all gradients" is not an audit. */
 const painted = new Set();
-for (const m of css.matchAll(/background(?:-color)?:\s*var\(--([a-z0-9-]+)\)/g)) painted.add(m[1]);
+for (const m of css.matchAll(/background(?:-color|-image)?:\s*([^;]+);/g)) {
+  for (const t of m[1].matchAll(/var\(--([a-z0-9-]+)\)/g)) painted.add(t[1]);
+}
 const classified = new Set(SURFACES.map(([, t]) => t));
 
 for (const t of painted) {

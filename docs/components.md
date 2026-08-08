@@ -103,8 +103,9 @@ spinner was white on a transparent background and simply invisible.
 
 ## Loaders
 
-Four, because they answer four different questions, and substituting one for another is a
-real usability error.
+Five classes, but four questions — `.n-dots` says the same thing as `.n-spinner`, just
+lighter, for an inline "thinking" state where a full ring is too heavy. Substituting one
+loader for another is a real usability error.
 
 | | Says | Use when |
 |---|---|---|
@@ -116,16 +117,23 @@ real usability error.
 <div class="nd-demo">
   <div class="nd-grid">
     <div class="n-card n-card-pad">
-      <p class="nd-label">spinner</p>
+      <p class="nd-label">spinner — sm, default, lg, xl</p>
       <div class="nd-row" style="gap:var(--space-4)">
         <span class="n-spinner n-spinner-sm"></span>
         <span class="n-spinner"></span>
         <span class="n-spinner n-spinner-lg"></span>
+        <span class="n-spinner n-spinner-xl"></span>
       </div>
       <p class="nd-label">with a status wrapper</p>
       <span class="n-loading" role="status"><span class="n-spinner n-spinner-sm"></span>Checking your card…</span>
       <p class="nd-label">dots</p>
       <span class="n-loading" role="status"><span class="n-dots"><i></i><i></i><i></i></span>Generating</span>
+      <p class="nd-label">still running after 10s</p>
+      <div class="n-loading" role="status">
+        <span class="n-spinner"></span>
+        <span>Loading…</span>
+        <span class="n-slow">Still working — larger than usual.</span>
+      </div>
     </div>
     <div class="n-card n-card-pad">
       <p class="nd-label">progress</p>
@@ -144,6 +152,7 @@ real usability error.
 
 ```html
 <span class="n-spinner n-spinner-sm"></span>
+<span class="n-spinner n-spinner-xl"></span>
 <span class="n-loading" role="status">
   <span class="n-spinner n-spinner-sm"></span>Checking your card…
 </span>
@@ -152,6 +161,13 @@ real usability error.
 <progress class="n-progress" value="0.62" max="1">62%</progress>
 <div class="n-bar" role="progressbar" aria-label="Loading"></div>
 <div class="n-skeleton" style="block-size:1.25rem;inline-size:40%"></div>
+
+<!-- the optional 10s message -->
+<div class="n-loading" role="status">
+  <span class="n-spinner"></span>
+  <span>Loading…</span>
+  <span class="n-slow">Still working — larger than usual.</span>
+</div>
 ```
 
 Prefer the skeleton wherever the shape is predictable. A spinner tells the reader nothing
@@ -173,6 +189,82 @@ decorative — which is why the examples pair them.
     property that carries the signal — **opacity**, which moves nothing across the screen and
     does not trigger vestibular symptoms. The travelling bar becomes a pulse in place; the
     spinner stops rotating and breathes instead.
+
+### One clock, one ramp
+
+All five loaders are generated from two rules rather than styled one at a time.
+
+**The clock.** Every loader moves on a **100ms tick** — `--dur-tick` — and completes a cycle
+in **twelve ticks**, `--dur-cycle: 1.2s`. 100ms is [Miller's instantaneity
+limit](https://dl.acm.org/doi/10.1145/1476589.1476628), the interval below which people stop
+perceiving discrete events as separate; twelve is the scale, the same count every colour
+family has. `.n-bar`, `.n-dots` and `.n-skeleton` all repeat on this cycle too, so five
+different shapes read as siblings instead of five unrelated widgets.
+
+**The ramp.** `--loader-1` through `--loader-12` are the twelve solved brand steps,
+reordered — separately per mode — by their measured contrast against the page (`--neutral-1`,
+never `--brand-1`: nothing is ever painted on the brand-tinted page, so measuring against it
+would score a ground that does not exist), strongest first. `--loader-1` is the head of the
+trail and the only step the build requires to clear 3:1, against both the page and a card.
+The rest of the ring fades toward `--loader-12` because steps 1–3 of the brand scale genuinely
+are that quiet against the page — the fade is not an opacity trick laid on top of one colour.
+Change the hue and the whole ramp is re-solved; a hand-written order would silently go stale
+for any hue but the one it was written against.
+
+**`.n-spinner-xl` is the fourth size, and the only one where the ramp reads as steps.** At
+the default 18px each sector is around 3.8px of arc — it renders and the rotation reads, but
+the ring looks like one continuous fade. At 4rem it is about 6px, and the banding becomes
+visible. Stated honestly: you can see that the fade is stepped, not that there are exactly
+twelve of them — counting the sectors would need a size no inline loader should ever be.
+`-xl` also adds a second ring behind the mask, counter-rotating over three cycles so the two
+layers drift against each other rather than locking in step.
+
+**The filled button has no ramp to draw from.** `.n-btn[aria-busy]`'s ring and
+`.n-spinner-on-fill` both sit on `--brand-9`, where the whole brand family is invisible, so
+there is no twelve-step sequence to order. Both are drawn from `--brand-ink` instead, fading
+from full strength to roughly 8% — stop *N* at `100 − (N−1) × 100⁄12` percent. Even spacing
+here is a **stated rule, not a solved value**: it is the one number in the loaders that was
+picked rather than computed. Recorded plainly rather than smoothed over, because on this
+project the honesty is the point.
+
+### Elapsed time, with no JavaScript
+
+`.n-spinner` and `.n-bar` visibly change state as a wait goes on, using nothing but a second
+animation and a delay:
+
+| Elapsed | Reads as | Mechanism |
+|---|---|---|
+| 0 – 1.2s | quiet | `n-wake` fades in once; a request that resolves in 300ms gets a faint indicator that never brightens, not a full-strength flash |
+| 1.2s+ | present | `n-wake` has finished — one full revolution at full contrast |
+| 10s+ | still running | a slower, 2.4s breath (`n-persist`), plus the optional `.n-slow` message |
+
+```html
+<div class="n-loading" role="status">
+  <span class="n-spinner"></span>
+  <span>Loading…</span>
+  <span class="n-slow">Still working — larger than usual.</span>
+</div>
+```
+
+`.n-slow` is optional — leave it out and nothing extra happens, nothing breaks. It sits at
+`visibility: hidden; opacity: 0` for ten seconds, then reveals itself. `.n-dots` and
+`.n-skeleton` repeat on the same clock but do not carry this quiet/present/persist arc — only
+`.n-spinner` and `.n-bar` do.
+
+`.n-progress` gets **none of this**. It is determinate — its length is already the
+information a reader wants, and fading a real number in and out would only make it harder to
+read.
+
+!!! warning "The 10s message: the reveal works, the announcement is unverified"
+
+    `.n-slow` reliably goes from invisible to visible at ten seconds in every browser; that
+    part needs nothing more than CSS. Whether a screen reader **announces** it is a separate
+    question, and **it has not been tested with one**. The theory is that `visibility: hidden`
+    keeps the text out of the accessibility tree and restoring it inside `.n-loading`'s
+    `role="status"` triggers the implicit `aria-live="polite"` announcement — but that is a
+    belief about live-region behaviour, not a checked fact. Do not rely on the announcement
+    until someone has run VoiceOver, NVDA or JAWS against it. The visual reveal stands on its
+    own either way.
 
 ## Fields
 

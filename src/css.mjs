@@ -199,6 +199,14 @@ function p3Block(palette, selector) {
   @layer nilam.tokens {
     ${selector} {
 ${FAMILIES.map((f) => family(palette, f, 'display-p3')).join('\n\n')}
+
+/* loaderRamp() is a SIBLING of family(), not a step inside it — unlike --ink-max and --void,
+ * which are safe because they live inside family() and so ride along with every gamut it is
+ * called for. loaderRamp() has to be called here explicitly, once per gamut, or the P3 palette
+ * this block solves and proves is solved, proven, and then discarded: --loader-N would stay
+ * pinned to its sRGB value forever, breaking "twelve aliases, no new colours" on every P3
+ * display, while every assertion stayed green because none of them looked for it in here. */
+${loaderRamp(palette, 'display-p3')}
     }
   }
 }

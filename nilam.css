@@ -255,6 +255,27 @@
     --info-11: light-dark(color(display-p3 0.41202 0.41237 0.42852), color(display-p3 0.53001 0.53039 0.54729));
     --info-12: light-dark(color(display-p3 0.29889 0.29921 0.31449), color(display-p3 0.67061 0.67101 0.68865));
     --info-ink: light-dark(color(display-p3 1 1 1), color(display-p3 0.05176 0.05176 0.05176));
+
+/* loaderRamp() is a SIBLING of family(), not a step inside it — unlike --ink-max and --void,
+ * which are safe because they live inside family() and so ride along with every gamut it is
+ * called for. loaderRamp() has to be called here explicitly, once per gamut, or the P3 palette
+ * this block solves and proves is solved, proven, and then discarded: --loader-N would stay
+ * pinned to its sRGB value forever, breaking "twelve aliases, no new colours" on every P3
+ * display, while every assertion stayed green because none of them looked for it in here. */
+    /* loader ramp — brand steps ordered by measured contrast against the page,
+       strongest first. light: 12 11 10 8 9 7 6 5 4 3 2 1  ·  dark: 12 10 9 11 8 7 6 5 4 3 2 1 */
+    --loader-1: light-dark(color(display-p3 0.28694 0.27069 0.50042), color(display-p3 0.65901 0.65864 0.80862));
+    --loader-2: light-dark(color(display-p3 0.39611 0.34361 0.78624), color(display-p3 0.5805 0.55172 0.9704));
+    --loader-3: light-dark(color(display-p3 0.40856 0.27129 0.95627), color(display-p3 0.5305 0.48541 0.96659));
+    --loader-4: light-dark(color(display-p3 0.41641 0.36442 0.81633), color(display-p3 0.50987 0.4894 0.82959));
+    --loader-5: light-dark(color(display-p3 0.44545 0.34988 0.95961), color(display-p3 0.48641 0.45722 0.84035));
+    --loader-6: light-dark(color(display-p3 0.50404 0.48813 0.79427), color(display-p3 0.40139 0.36417 0.74846));
+    --loader-7: light-dark(color(display-p3 0.78141 0.78237 0.89023), color(display-p3 0.19787 0.18029 0.37928));
+    --loader-8: light-dark(color(display-p3 0.86134 0.86241 0.92451), color(display-p3 0.16777 0.15565 0.31394));
+    --loader-9: light-dark(color(display-p3 0.89024 0.89107 0.93113), color(display-p3 0.14527 0.13916 0.25187));
+    --loader-10: light-dark(color(display-p3 0.91746 0.91799 0.94119), color(display-p3 0.12128 0.11881 0.19317));
+    --loader-11: light-dark(color(display-p3 0.94882 0.94905 0.95798), color(display-p3 0.09308 0.09275 0.13036));
+    --loader-12: light-dark(color(display-p3 0.97334 0.97341 0.97634), color(display-p3 0.06226 0.06235 0.08082));
     }
   }
 }

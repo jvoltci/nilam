@@ -233,6 +233,32 @@ for (const mode of ['light', 'dark']) {
     check(p3Ratio(ink, at(9)) >= 4.5,
       `P3 ${mode}/${fam}: --${fam}-ink is ${p3Ratio(ink, at(9)).toFixed(2)}:1 on the solid as emitted — the button cannot be labelled`);
   }
+
+  /* --loader-N specifically, parsed from p3Tokens the same way as the families just above —
+   * i.e. from p3Section, the slice that starts at "@media (color-gamut: p3)", not from cssP3
+   * as a whole. That distinction is the whole point of this block.
+   *
+   * p3Block() only ever looped over FAMILIES; loaderRamp() was added later as a sibling
+   * function and never wired into it, so --loader-N stayed pinned to its sRGB value forever
+   * on a P3 display — silently breaking "twelve aliases, no new colours" for exactly the
+   * readers the block exists for. The `--loader-${n} is missing from nilam.tokens.css` check
+   * further down this file does a bare substring search over the WHOLE file and cannot tell
+   * which media block matched, so it stayed green throughout. This one can tell, because
+   * p3Tokens can only contain a key if the regex matched inside p3Section. */
+  for (let n = 1; n <= 12; n++) {
+    const key = `loader-${n}`;
+    const v = p3Tokens[mode].get(key);
+    check(
+      v != null,
+      `P3 ${mode}: --${key} is missing from the @media (color-gamut: p3) block — it is still pinned to its sRGB value on a P3 display`,
+    );
+    if (v) {
+      check(
+        v.length === 3 && v.every((c) => Number.isFinite(c) && c >= 0 && c <= 1),
+        `P3 ${mode}: --${key} is ${JSON.stringify(v)} — a channel outside [0,1] means the gamut clamp did not run`,
+      );
+    }
+  }
 }
 
 /* P3 must actually BUY something, or the whole block is 9 kB of duplication. It must also
@@ -482,8 +508,14 @@ for (const status of ['ok', 'warn', 'danger', 'info']) {
     );
 
     for (let i = 1; i < 12; i++) {
-      const hi = contrast(p[mode].brand[order[i - 1]], p[mode].neutral[1]);
-      const lo = contrast(p[mode].brand[order[i]], p[mode].neutral[1]);
+      /* contrastIn(..., 'srgb'), not contrast() — contrast() hardcodes WCAG's published
+       * luminance weights, while contrastIn() and solveLoaderRamp() itself both use more
+       * precise weights that disagree with those by about 5e-5. Harmless while every gap
+       * here is large, but a future hue whose steps land in a near-tie could make this
+       * check disagree with the sort it is grading, and report a false ordering violation
+       * on correctly-ordered colours. Use what solveLoaderRamp used to sort. */
+      const hi = contrastIn(p[mode].brand[order[i - 1]], p[mode].neutral[1], 'srgb');
+      const lo = contrastIn(p[mode].brand[order[i]], p[mode].neutral[1], 'srgb');
       check(
         hi >= lo,
         `${mode}: loader ramp is not descending by contrast at position ${i}: ` +

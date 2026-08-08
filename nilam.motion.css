@@ -39,33 +39,45 @@
  * pulse in place; the spinner stops rotating and breathes instead.
  */
 @media (prefers-reduced-motion: reduce) {
-  .n-spinner,
-  .n-dots i,
-  .n-bar::after,
-  .n-btn[aria-busy='true']::before {
-    animation-duration: 1.4s !important;
-    animation-iteration-count: infinite !important;
-  }
-  .n-spinner, .n-btn[aria-busy='true']::before {
-    animation-name: n-breathe !important;
-    /* Without rotation the single-arc trick stops reading as a ring, so close it. */
-    border-block-start-color: var(--brand-9);
+  /* Rotation off, breath on. The shorthand with !important REPLACES the whole animation
+   * list, which is the only way to swap one animation out when several share an element:
+   * `animation-duration: X !important` would apply to every animation on it at once. */
+  .n-spinner::before,
+  .n-btn[aria-busy='true']::before,
+  .n-dots i {
+    animation: n-breathe 1.4s ease-in-out infinite !important;
   }
   .n-bar::after {
-    animation-name: n-breathe !important;
+    animation: n-breathe 1.4s ease-in-out infinite !important;
+    /* Without this the block breathes at 42% width in a random position. */
     inline-size: 100%;
     translate: none;
   }
-  /* iteration-count as well as duration, and its absence was a second bug hiding inside the
-   * first. The skeleton was not in the selector list above, so it inherited base's
-   * `animation-iteration-count: 1 !important` and breathed exactly once before stopping —
-   * which for a skeleton is worse than not animating, because the reader watches it settle
-   * and concludes the content has arrived. Measured: `n-breathe 1.8s 1` after the layer move
-   * fixed the other three. */
+  /* iteration-count as well as duration, and its absence was a second bug hiding inside
+   * the first. The skeleton was not in the selector list, so it inherited base's
+   * `animation-iteration-count: 1 !important` and breathed exactly ONCE before stopping —
+   * worse than not animating, because the reader watches it settle and concludes the
+   * content has arrived. Measured: `n-breathe 1.8s 1`. */
   .n-skeleton {
-    animation-name: n-breathe !important;
-    animation-duration: 1.8s !important;
-    animation-iteration-count: infinite !important;
+    animation: n-breathe 1.8s ease-in-out infinite !important;
+  }
+
+  /* The xl depth layer is pure ornament — it carries no signal the ring beneath it does
+   * not already carry — so it is removed rather than exempted. Freezing it would leave a
+   * lopsided static smear across the ring. */
+  .n-spinner-xl::after { display: none; }
+
+  /* The elapsed-time signals are kept at their REAL timings. They animate opacity only,
+   * so they are already safe — but base's blanket `animation-duration: 0.01ms !important`
+   * would otherwise fire the 10s reveal instantly, telling a reduced-motion user that a
+   * 200ms request was running long. */
+  .n-spinner,
+  .n-bar {
+    animation: n-wake var(--dur-cycle) var(--ease-out) 1 both,
+               n-persist 2.4s var(--ease-in-out) infinite 10s !important;
+  }
+  .n-loading .n-slow {
+    animation: n-slow-reveal 10s linear 1 both !important;
   }
 }
 @keyframes n-breathe { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }

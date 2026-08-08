@@ -974,6 +974,31 @@
 
   @keyframes n-spin { to { rotate: 360deg; } }
 
+  /* ── elapsed time, made visible ───────────────────────────────────────────
+   *
+   * Miller gave three thresholds and most systems use none of them. All three here, with
+   * no JavaScript, no timers and no state — just a second animation with a delay.
+   *
+   *   0 - 1.2s   quiet      under the flow-of-thought limit the wait is not worth
+   *                         shouting about, so a request that resolves in 300ms shows a
+   *                         faint indicator that never brightens instead of a full flash
+   *   1.2s+      present    n-wake has finished; exactly one revolution
+   *   10s+       persist    the attention limit; a slow breath says it has not hung
+   *
+   * ALL THREE ANIMATE OPACITY ONLY. That is deliberate and not just economy: opacity is
+   * exactly what the reduced-motion exemption preserves, so these are safe under `reduce`
+   * by construction rather than by remembering to exempt them.
+   *
+   * The alternative considered and rejected was the usual "delay the spinner by N
+   * milliseconds". The field ranges from 100ms to 600ms with no derivable value, and
+   * inventing one is the thing this package exists not to do. */
+  @keyframes n-wake    { from { opacity: 0.3; } to { opacity: 1; } }
+  @keyframes n-persist { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+  @keyframes n-slow-reveal {
+    0%, 99.9% { visibility: hidden; opacity: 0; }
+    100%      { visibility: visible; opacity: 1; }
+  }
+
   /* Determinate. The element is <progress>, so the value is in the accessibility tree for
      free and no aria-valuenow needs maintaining. appearance:none then rebuilds it, and
      both pseudo-element sets are needed because WebKit and Firefox disagree. */
@@ -1062,6 +1087,20 @@
     gap: var(--space-2);
     font-size: var(--text-0);
     color: var(--neutral-11);
+  }
+
+  /* Optional. An author who does not add a .n-slow element gets nothing extra and nothing
+   * breaks. Inside .n-loading — which is role="status", so aria-live="polite" — the
+   * visibility flip is intended to both reveal it and announce it.
+   *
+   * THE ANNOUNCEMENT IS NOT VERIFIED. visibility:hidden should keep it out of the
+   * accessibility tree and adding it back should trigger the live region. That is a belief
+   * about live-region behaviour, not a tested fact; see Task 14. The visual reveal stands
+   * on its own either way. */
+  .n-loading .n-slow {
+    visibility: hidden;
+    opacity: 0;
+    animation: n-slow-reveal 10s linear 1 both;
   }
 
   /* ── field ──────────────────────────────────────────────────────────────── */

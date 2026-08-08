@@ -148,9 +148,13 @@ built CSS, not a list a human keeps in step.
 Added to the existing `prove` run, so a failure aborts the build rather than emitting a
 palette that lies:
 
-1. `--loader-1` clears **3:1** against the page, against `--surface` (a card), and against
-   every filled button background. It is the head of the trail and the one sector that
-   must always be findable.
+1. `--loader-1` clears **3:1** against the page and against `--surface` (a card). It is the
+   head of the trail and the one sector that must always be findable.
+
+   Not against filled buttons: that ring is drawn from `--brand-ink`, not the loader ramp,
+   and `proveScale` already asserts ink clears 4.5:1 on step 9. An earlier draft of this
+   spec asked for a loader-ramp assertion against button backgrounds, which would have
+   measured a colour that is never painted there.
 2. The twelve `--loader-N` are a permutation of the twelve brand steps — no value
    invented, none dropped, none repeated.
 3. The ordering is strictly descending by measured contrast against the page.

@@ -476,9 +476,21 @@ for (const status of ['ok', 'warn', 'danger', 'info']) {
    * BOTH animations on the element at once rather than to the one meant to change. See
    * test/motion.test.mjs, which runs the same check across the whole stylesheet instead of
    * this hard-coded selector list. */
-  for (const sel of ['.n-spinner', '.n-skeleton', '.n-bar::after', '.n-dots i']) {
+  /* `m[1].includes(sel)` was a SUBSTRING test on the raw selector-list text, not a match
+   * against an actual selector. For sel = '.n-spinner' that matched two things it should
+   * not have: '.n-spinner::before' (which merely has '.n-spinner' as a text prefix) AND —
+   * fatally — the literal, exact selector list of the new elapsed-time rule
+   * `.n-spinner, .n-bar { animation: n-wake ..., n-persist ... infinite ... !important }`.
+   * That rule's own `infinite !important` is legitimate (it keeps the 10s persist pulse
+   * alive), but merging its declarations into the same bucket as '.n-spinner::before' meant
+   * deleting the ring's actual breathe exemption still left enough text to satisfy the
+   * shorthand check — the guard was blind to exactly the regression it exists to catch.
+   * Split each rule's selector list on commas and require an EXACT (trimmed) match, and
+   * check '.n-spinner::before' — the selector that actually carries the ring's rotation
+   * exemption — as its own entry instead of letting '.n-spinner' stand in for it. */
+  for (const sel of ['.n-spinner::before', '.n-spinner', '.n-skeleton', '.n-bar::after', '.n-dots i']) {
     const blocks = [...reduce.matchAll(/([^{}]+)\{([^}]*)\}/g)]
-      .filter((m) => m[1].includes(sel)).map((m) => m[2]).join(' ');
+      .filter((m) => m[1].split(',').some((s) => s.trim() === sel)).map((m) => m[2]).join(' ');
     const usesLonghand = /animation-duration:[^;]*!important/.test(blocks)
       && /animation-iteration-count:\s*infinite\s*!important/.test(blocks);
     const usesShorthand = /animation:\s*[^;]*\binfinite\b[^;]*!important/.test(blocks);

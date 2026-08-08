@@ -129,8 +129,17 @@ check(
     'the loaders with an !important in nilam.motion, and important declarations invert layer ' +
     'order — reorder the layers and the spinners animate through the screenshot again',
 );
+/* Longhand-only regex missed the SHORTHAND form the exemption now uses. `.n-spinner`
+ * carries two simultaneous animations (the ring's breathe swap and the elapsed-time
+ * wake/persist pair), so a longhand `animation-duration: X !important` would clobber both
+ * instead of swapping just the one that's meant to change — hence
+ * `.n-spinner::before { animation: n-breathe 1.4s ease-in-out infinite !important }`. This
+ * check kept testing only the longhand pattern, so it reported the exemption gone even
+ * though it was present (in shorthand). Accept either form. */
+const motionCssText = readFileSync(join(ROOT, 'nilam.motion.css'), 'utf8');
 check(
-  /animation-iteration-count:\s*infinite\s*!important/.test(readFileSync(join(ROOT, 'nilam.motion.css'), 'utf8')),
+  /animation-iteration-count:\s*infinite\s*!important/.test(motionCssText) ||
+    /animation:\s*[^;]*\binfinite\b[^;]*!important/.test(motionCssText),
   'the loader exemption from prefers-reduced-motion is gone from nilam.motion.css. That is ' +
     'a deliberate feature — a frozen spinner reads as a hung app — so either it regressed or ' +
     'this harness is now fighting a battle it no longer needs to',

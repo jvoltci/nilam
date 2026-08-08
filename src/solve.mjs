@@ -463,3 +463,24 @@ export function solvePalette(brandHue, { semanticHues, gamut = 'srgb' } = {}) {
   }
   return out;
 }
+
+/* ── the loader ramp ──────────────────────────────────────────────────────
+ *
+ * The twelve brand steps, ordered by measured contrast against THE PAGE, strongest first.
+ * A spinner drawn from this fades from findable to invisible without a single opacity
+ * value: the tail is quiet because steps 1-3 genuinely are.
+ *
+ * The page is --neutral-1, NOT brand-1. Brand-1 is the brand-tinted page and nothing is
+ * ever drawn on it; passing it here would measure a ground that is never painted — the
+ * same closed loop that made step 7 read 3.05:1 on paper and 2.70:1 on a card.
+ *
+ * Ties break on step number so the emitted CSS is byte-identical across runs. Two steps
+ * CAN tie: the ramp is not monotonic in lightness near step 9, where the solid is the
+ * vivid one and 8 and 10 sit either side of it.
+ */
+export function solveLoaderRamp(scale, page, gamut = 'srgb') {
+  return Array.from({ length: 12 }, (_, i) => i + 1).sort((a, b) => {
+    const d = contrastIn(scale[b], page, gamut) - contrastIn(scale[a], page, gamut);
+    return d !== 0 ? d : a - b;
+  });
+}

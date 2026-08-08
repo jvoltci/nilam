@@ -19,7 +19,7 @@ import { execFileSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { solvePalette, solveSemanticHues, inkFor, NILAM_HUE, GLOW_L } from '../src/solve.mjs';
+import { solvePalette, solveSemanticHues, inkFor, NILAM_HUE, GLOW_L, solveLoaderRamp } from '../src/solve.mjs';
 import { prove, proveStatusChannels, proveDichromacy } from '../src/prove.mjs';
 import { contrast, contrastIn, hexToOklch, toHex, fmt, fmtIn, gammaDecode, maxChroma, maxChromaIn } from '../src/colour.mjs';
 import { toCss } from '../src/css.mjs';
@@ -431,6 +431,46 @@ for (const status of ['ok', 'warn', 'danger', 'info']) {
     check(/animation-iteration-count:\s*infinite\s*!important/.test(blocks),
       `${sel} has no !important animation-iteration-count under reduce — nilam.base pins it to 1, so it runs once and settles`);
   }
+}
+
+/* ── loader ramp ─────────────────────────────────────────────────────────
+ *
+ * The ordering must be COMPUTED. A hand-written order stays green forever while
+ * silently becoming wrong for any hue but 285 — the exact failure mode this
+ * package exists to prevent.
+ */
+{
+  const p = solvePalette(NILAM_HUE, { semanticHues: solveSemanticHues(NILAM_HUE).hues });
+
+  for (const mode of ['light', 'dark']) {
+    const order = solveLoaderRamp(p[mode].brand, p[mode].neutral[1]);
+
+    check(order.length === 12, `${mode}: loader ramp has ${order.length} entries, needs 12`);
+    check(new Set(order).size === 12, `${mode}: loader ramp repeats a step — ${order.join(',')}`);
+    check(
+      [...order].sort((a, b) => a - b).join(',') === '1,2,3,4,5,6,7,8,9,10,11,12',
+      `${mode}: loader ramp is not a permutation of the twelve steps — ${order.join(',')}`,
+    );
+
+    for (let i = 1; i < 12; i++) {
+      const hi = contrast(p[mode].brand[order[i - 1]], p[mode].neutral[1]);
+      const lo = contrast(p[mode].brand[order[i]], p[mode].neutral[1]);
+      check(
+        hi >= lo,
+        `${mode}: loader ramp is not descending by contrast at position ${i}: ` +
+          `step ${order[i - 1]} is ${hi.toFixed(4)}:1 but step ${order[i]} is ${lo.toFixed(4)}:1`,
+      );
+    }
+
+    check(order[11] === 1, `${mode}: the tail of the ramp is step ${order[11]}, not step 1 ` +
+      `— step 1 IS the page tint, so it must always have the least contrast against the page`);
+  }
+
+  /* Determinism: the same input must give the same order, every time. A sort with an
+   * unstable tie-break would emit different CSS on different runs. */
+  const a = solveLoaderRamp(p.light.brand, p.light.neutral[1]).join(',');
+  const b = solveLoaderRamp(p.light.brand, p.light.neutral[1]).join(',');
+  check(a === b, 'loader ramp ordering is not deterministic across two identical calls');
 }
 
 /* ── report ──────────────────────────────────────────────────────────────── */

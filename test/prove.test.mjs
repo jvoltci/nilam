@@ -442,13 +442,23 @@ for (const status of ['ok', 'warn', 'danger', 'info']) {
    * off-by-one that reported three real, correct rules as missing. */
   const reduce = (/@media \(prefers-reduced-motion: reduce\)([\s\S]*)$/.exec(code)?.[1] ?? '')
     .replace(/^\s*\{/, '');
+  /* Two ways to keep an animation infinite under reduce, and both are legitimate:
+   * LONGHAND (separate animation-duration / animation-iteration-count overrides) for an
+   * element with exactly one animation, or the `animation:` SHORTHAND when an element
+   * carries more than one at once — .n-spinner gained a second (n-wake, n-persist) in the
+   * elapsed-time work, and a longhand `animation-duration: X !important` would apply to
+   * BOTH animations on the element at once rather than to the one meant to change. See
+   * test/motion.test.mjs, which runs the same check across the whole stylesheet instead of
+   * this hard-coded selector list. */
   for (const sel of ['.n-spinner', '.n-skeleton', '.n-bar::after', '.n-dots i']) {
     const blocks = [...reduce.matchAll(/([^{}]+)\{([^}]*)\}/g)]
       .filter((m) => m[1].includes(sel)).map((m) => m[2]).join(' ');
-    check(/animation-duration:[^;]*!important/.test(blocks),
-      `${sel} has no !important animation-duration under reduce — nilam.base pins it to 0.01ms and it freezes`);
-    check(/animation-iteration-count:\s*infinite\s*!important/.test(blocks),
-      `${sel} has no !important animation-iteration-count under reduce — nilam.base pins it to 1, so it runs once and settles`);
+    const usesLonghand = /animation-duration:[^;]*!important/.test(blocks)
+      && /animation-iteration-count:\s*infinite\s*!important/.test(blocks);
+    const usesShorthand = /animation:\s*[^;]*\binfinite\b[^;]*!important/.test(blocks);
+    const isTimed = /animation:\s*n-(wake|slow-reveal)/.test(blocks);
+    check(usesLonghand || usesShorthand || isTimed,
+      `${sel} has no !important animation override under reduce that keeps it infinite — nilam.base pins duration to 0.01ms and iteration-count to 1, so it freezes after one run`);
   }
 }
 

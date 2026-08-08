@@ -211,11 +211,13 @@ are that quiet against the page — the fade is not an opacity trick laid on top
 Change the hue and the whole ramp is re-solved; a hand-written order would silently go stale
 for any hue but the one it was written against.
 
-**`.n-spinner-xl` is the fourth size, and the only one where twelve is countable.** At the
-default 18px each sector is around 3.8px of arc — it renders and the rotation reads, but you
-cannot count twelve sectors. At 4rem there is room, and `-xl` adds a second ring behind the
-mask, counter-rotating over three cycles so the two layers drift against each other rather
-than locking in step.
+**`.n-spinner-xl` is the fourth size, and the only one where the ramp reads as steps.** At
+the default 18px each sector is around 3.8px of arc — it renders and the rotation reads, but
+the ring looks like one continuous fade. At 4rem it is about 6px, and the banding becomes
+visible. Stated honestly: you can see that the fade is stepped, not that there are exactly
+twelve of them — counting the sectors would need a size no inline loader should ever be.
+`-xl` also adds a second ring behind the mask, counter-rotating over three cycles so the two
+layers drift against each other rather than locking in step.
 
 **The filled button has no ramp to draw from.** `.n-btn[aria-busy]`'s ring and
 `.n-spinner-on-fill` both sit on `--brand-9`, where the whole brand family is invisible, so

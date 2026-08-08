@@ -399,6 +399,17 @@
           <span class="n-spinner n-spinner-lg"></span>
           <span class="n-loading" role="status"><span class="n-spinner n-spinner-sm"></span>Checking your card…</span>
         </div>
+        <!-- xl, and it earns its own row: this is the only size at which the twelve
+             sectors can be counted. At 18px each sector is about 3.8px of arc — it
+             renders and the rotation reads, but the ramp is not legible as twelve. -->
+        <p class="lbl" style="margin-block-start:var(--space-3)">spinner-xl · page level</p>
+        <div class="row" style="gap:var(--space-4)">
+          <span class="n-spinner n-spinner-xl"></span>
+          <span class="n-loading" role="status">
+            <span>Preparing your workspace…</span>
+            <span class="n-slow">Still working — larger than usual.</span>
+          </span>
+        </div>
         <p class="lbl" style="margin-block-start:var(--space-3)">dots · inline thinking</p>
         <span class="n-loading" role="status"><span class="n-dots"><i></i><i></i><i></i></span>Generating</span>
       </div>

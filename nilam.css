@@ -989,11 +989,14 @@
   }
   .n-progress::-webkit-progress-bar { background: var(--neutral-4); border-radius: var(--r-full); }
   .n-progress::-webkit-progress-value {
-    background: var(--brand-9);
+    background: linear-gradient(90deg, var(--loader-6), var(--loader-1));
     border-radius: var(--r-full);
     transition: inline-size var(--dur-2) var(--ease-out);
   }
-  .n-progress::-moz-progress-bar { background: var(--brand-9); border-radius: var(--r-full); }
+  .n-progress::-moz-progress-bar {
+    background: linear-gradient(90deg, var(--loader-6), var(--loader-1));
+    border-radius: var(--r-full);
+  }
 
   /* Indeterminate bar. A <progress> with no value attribute is already indeterminate to
      assistive tech, so this styles that state rather than inventing a widget. */
@@ -1005,15 +1008,22 @@
     border-radius: var(--r-full);
     background: var(--neutral-4);
     overflow: hidden;
+    animation: n-wake var(--dur-cycle) var(--ease-out) 1 both,
+               n-persist 2.4s var(--ease-in-out) infinite 10s;
   }
+  /* The travelling block is the ramp itself. Duration is --dur-cycle so it shares the
+   * clock, but the slide is SMOOTH, not steps(12): stepping is right where one tick moves
+   * a small arc and wrong for anything that travels a distance, where twelve large
+   * position jumps read as juddering rather than as ticking. */
   .n-bar::after {
     content: '';
     position: absolute;
     inset-block: 0;
-    inline-size: 40%;
+    inline-size: 42%;
     border-radius: inherit;
-    background: var(--brand-9);
-    animation: n-slide 1.4s var(--ease-in-out) infinite;
+    background: linear-gradient(90deg,
+      var(--loader-12), var(--loader-8), var(--loader-4), var(--loader-1));
+    animation: n-slide var(--dur-cycle) var(--ease-in-out) infinite;
   }
   @keyframes n-slide {
     0%   { translate: -110% 0; }
@@ -1022,15 +1032,17 @@
 
   /* Three dots, for inline "typing"/thinking states where a ring is too heavy. */
   .n-dots { display: inline-flex; gap: 0.25rem; align-items: center; }
+  /* Three points on the same ramp, staggered by one tick. Was 0.15s/0.3s, which belonged
+     to no clock. */
   .n-dots i {
     inline-size: 0.3125rem;
     block-size: 0.3125rem;
     border-radius: var(--r-full);
-    background: var(--neutral-11);
-    animation: n-pulse 1.2s var(--ease-in-out) infinite;
+    animation: n-pulse var(--dur-cycle) var(--ease-in-out) infinite;
   }
-  .n-dots i:nth-child(2) { animation-delay: 0.15s; }
-  .n-dots i:nth-child(3) { animation-delay: 0.3s; }
+  .n-dots i:nth-child(1) { background: var(--loader-1); }
+  .n-dots i:nth-child(2) { background: var(--loader-3); animation-delay: var(--dur-tick); }
+  .n-dots i:nth-child(3) { background: var(--loader-5); animation-delay: calc(var(--dur-tick) * 2); }
   @keyframes n-pulse {
     0%, 60%, 100% { opacity: 0.3; scale: 0.8; }
     30%           { opacity: 1;   scale: 1; }
@@ -1697,7 +1709,7 @@
     background: linear-gradient(90deg, var(--neutral-5) 25%, var(--neutral-7) 50%, var(--neutral-5) 75%);
     background-size: 200% 100%;
     border-radius: var(--r-2);
-    animation: n-shimmer 1.4s ease-in-out infinite;
+    animation: n-shimmer var(--dur-cycle) ease-in-out infinite;
   }
   @keyframes n-shimmer { to { background-position: -200% 0; } }
 

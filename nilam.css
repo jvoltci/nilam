@@ -13,7 +13,7 @@
  * Every lightness here was found by inverting a contrast requirement, not chosen. The
  * semantic hues were chosen to maximise the smallest pairwise separation across normal
  * vision, protanopia, deuteranopia and tritanopia.
- * 1096 assertions hold over these exact
+ * 1152 assertions hold over these exact
  * values; edit one by hand and none of them do.
  *
  * Role model (Radix's — it is good design and there was no reason to reinvent it):

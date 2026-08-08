@@ -882,20 +882,50 @@
    * nothing about what is arriving; a skeleton tells them where to look when it does.
    */
 
+  /* Twelve sectors, one per scale step, ordered by contrast against the page. The trail
+   * fade is not an opacity trick — it IS steps 1-3 being genuinely quiet. Ask why twelve
+   * and the answer is the same as why the scale has twelve.
+   *
+   * THE ELEMENT DOES NOT ROTATE; its ::before does. That split is load-bearing: the
+   * element carries the elapsed-time animations (n-wake, n-persist) and .n-spinner-xl
+   * adds a counter-rotating ::after. With rotation on the element, all three would
+   * compound and the xl layer would be dragged round by the layer beneath it.
+   *
+   * steps(12) rather than linear, so it ticks one sector per --dur-tick like the macOS
+   * spinner instead of gliding. Each tick moves the pattern by exactly one sector, which
+   * is what makes a ring of twelve DIFFERENT colours read as marching rather than static.
+   *
+   * Rotation is a transform, so it composites. Animating the gradient's stops instead
+   * would repaint the whole element every frame for the same picture. */
   .n-spinner {
+    position: relative;
     display: inline-block;
     flex: none;
     inline-size: 1.125rem;
-    block-size: 1.125rem;
-    border: var(--line-2) solid var(--neutral-6);
-    /* One arc in a stronger colour is what makes rotation legible. A ring of uniform
-       colour rotating looks static. */
-    border-block-start-color: var(--brand-9);
+    aspect-ratio: 1;
     border-radius: var(--r-full);
-    animation: n-spin 0.6s linear infinite;
+    -webkit-mask: radial-gradient(closest-side, #0000 62%, #000 64%);
+            mask: radial-gradient(closest-side, #0000 62%, #000 64%);
+    animation: n-wake var(--dur-cycle) var(--ease-out) 1 both,
+               n-persist 2.4s var(--ease-in-out) infinite 10s;
   }
-  .n-spinner-sm { inline-size: 0.875rem; block-size: 0.875rem; border-width: var(--line-1); }
-  .n-spinner-lg { inline-size: 1.75rem; block-size: 1.75rem; }
+  .n-spinner::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: conic-gradient(from 0deg,
+      var(--loader-1)    0     30deg,  var(--loader-2)  30deg  60deg,
+      var(--loader-3)   60deg  90deg,  var(--loader-4)  90deg 120deg,
+      var(--loader-5)  120deg 150deg,  var(--loader-6) 150deg 180deg,
+      var(--loader-7)  180deg 210deg,  var(--loader-8) 210deg 240deg,
+      var(--loader-9)  240deg 270deg, var(--loader-10) 270deg 300deg,
+      var(--loader-11) 300deg 330deg, var(--loader-12) 330deg 360deg);
+    animation: n-spin var(--dur-cycle) steps(12) infinite;
+  }
+
+  .n-spinner-sm { inline-size: 0.875rem; }
+  .n-spinner-lg { inline-size: 1.75rem; }
   /* On a filled surface the ring must come from the ink, not from the neutral ramp. */
   .n-spinner-on-fill { border-color: color-mix(in oklab, var(--brand-ink) 30%, transparent); border-block-start-color: var(--brand-ink); }
 

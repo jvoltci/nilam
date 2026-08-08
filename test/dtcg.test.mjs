@@ -30,7 +30,7 @@ import { prove } from '../src/prove.mjs';
 import { contrast, distance, hexToOklch, fmt } from '../src/colour.mjs';
 import { toCss } from '../src/css.mjs';
 import {
-  toDtcg, walkTokens, cssVarOf, parseCustomProps, SCALE_OMITTED, DTCG_VERSION, VENDOR,
+  toDtcg, walkTokens, cssVarOf, parseCustomProps, SCALE_OMITTED, COLOUR_OMITTED, DTCG_VERSION, VENDOR,
 } from '../src/dtcg.mjs';
 import {
   toStyleDictionary, toFigmaVariables, toSwift, toKotlin,
@@ -63,6 +63,12 @@ const all = { light: tokensOf(doc.light), dark: tokensOf(doc.dark) };
  * catch the case dtcg.mjs is most exposed to: it keeps its own copy of the FAMILIES
  * constant, so a seventh family added to css.mjs and not to dtcg.mjs has to fail
  * somewhere, and this is that somewhere.
+ *
+ * "Parity" is not "every colour token in the CSS has a twin in the export" — the loader
+ * ramp is a deliberate exception, declared in COLOUR_OMITTED because it is an ORDERING
+ * over --brand-N rather than new colour. So this checks the same thing SCALE_OMITTED
+ * already checks for non-colour tokens: every token is either present on both sides, or
+ * named, one by one, in the omission list. A token missing from both is still a failure.
  */
 const inCss = new Set();
 for (const m of css.matchAll(/--([a-z0-9-]+):\s*light-dark\(/g)) inCss.add(`--${m[1]}`);
@@ -80,16 +86,35 @@ for (const mode of MODES) {
   }
 
   for (const v of inCss) {
-    check(inDtcg.has(v), `${mode}: ${v} exists in the stylesheet but NOT in the DTCG export — a consumer importing the tokens gets a palette with a hole in it`);
+    check(
+      inDtcg.has(v) || v.slice(2) in COLOUR_OMITTED,
+      `${mode}: ${v} exists in the stylesheet but NOT in the DTCG export, and is not declared in COLOUR_OMITTED — a consumer importing the tokens gets a palette with a hole in it`,
+    );
   }
   for (const v of inDtcg) {
     check(inCss.has(v), `${mode}: ${v} exists in the DTCG export but NOT in the stylesheet — the JSON promises a token the CSS never defines`);
   }
   check(
-    inDtcg.size === inCss.size,
-    `${mode}: the stylesheet has ${inCss.size} colour tokens and the DTCG export has ${inDtcg.size} — the two artefacts describe different systems`,
+    inDtcg.size === inCss.size - Object.keys(COLOUR_OMITTED).length,
+    `${mode}: the stylesheet has ${inCss.size} colour tokens, ${Object.keys(COLOUR_OMITTED).length} declared omitted, and the DTCG export has ${inDtcg.size} — the two artefacts describe different systems`,
   );
 }
+
+/* The omission list itself has to name real tokens — the same check SCALE_OMITTED gets
+ * below, so a name can't sit in COLOUR_OMITTED after the CSS stops painting it. */
+for (const name of Object.keys(COLOUR_OMITTED)) {
+  check(
+    inCss.has(`--${name}`),
+    `COLOUR_OMITTED declares --${name} omitted from the DTCG export, but nilam.css does not paint it — the omission list is documenting a token that does not exist`,
+  );
+}
+/* And the omission has to be visible from the artefact, not only from this file — same
+ * requirement as omittedFromScaleCss below, checked here for the colour side. */
+check(
+  Object.keys(resolver.sets.scale.sources[0].$extensions[VENDOR].omittedFromColorExport).length
+    === Object.keys(COLOUR_OMITTED).length,
+  'the emitted document does not carry the list of omitted colour tokens, so a consumer cannot tell why the counts differ',
+);
 
 /* ── 2. the values round-trip ──────────────────────────────────────────────────── */
 
@@ -463,8 +488,8 @@ for (const name of figmaNames) {
 }
 const figmaColours = figma.variables.filter((v) => v.resolvedType === 'COLOR');
 check(
-  figmaColours.length === inCss.size,
-  `Figma gets ${figmaColours.length} colour variables against the stylesheet's ${inCss.size} — the palette arrives in Figma incomplete`,
+  figmaColours.length === inCss.size - Object.keys(COLOUR_OMITTED).length,
+  `Figma gets ${figmaColours.length} colour variables against the stylesheet's ${inCss.size} (${Object.keys(COLOUR_OMITTED).length} declared omitted) — the palette arrives in Figma incomplete`,
 );
 const byVar = new Map();
 for (const v of figma.variableModeValues) {
@@ -501,8 +526,8 @@ check(
 
 const swift = toSwift(palette, { assertions: proof.count });
 check(
-  (swift.match(/public static let /g) ?? []).length === inCss.size,
-  `the Swift export declares ${(swift.match(/public static let /g) ?? []).length} colours against the stylesheet's ${inCss.size}`,
+  (swift.match(/public static let /g) ?? []).length === inCss.size - Object.keys(COLOUR_OMITTED).length,
+  `the Swift export declares ${(swift.match(/public static let /g) ?? []).length} colours against the stylesheet's ${inCss.size} (${Object.keys(COLOUR_OMITTED).length} declared omitted)`,
 );
 /* SwiftUI has no dynamic-colour primitive, so both platform branches have to be there. A
  * Swift export that emitted one flat value per token would compile, ship, and lose the
@@ -516,8 +541,8 @@ for (const family of FAMILIES) {
 
 const kotlin = toKotlin(palette, { assertions: proof.count });
 check(
-  (kotlin.match(/^    val /gm) ?? []).length === inCss.size,
-  `the Kotlin data class has ${(kotlin.match(/^    val /gm) ?? []).length} fields against the stylesheet's ${inCss.size} colours`,
+  (kotlin.match(/^    val /gm) ?? []).length === inCss.size - Object.keys(COLOUR_OMITTED).length,
+  `the Kotlin data class has ${(kotlin.match(/^    val /gm) ?? []).length} fields against the stylesheet's ${inCss.size} colours (${Object.keys(COLOUR_OMITTED).length} declared omitted)`,
 );
 check(kotlin.includes('public fun nilamLightColors()') && kotlin.includes('public fun nilamDarkColors()'), 'the Kotlin export no longer emits both factories, so one mode is unreachable');
 for (const family of FAMILIES) {
@@ -537,7 +562,7 @@ for (const family of FAMILIES) {
 /* ── report ──────────────────────────────────────────────────────────────────── */
 
 console.log(`\nnilam — DTCG ${DTCG_VERSION} export, hue ${palette.brandHue}`);
-console.log(`  ${all.light.size} tokens per mode  ·  ${inCss.size} colour tokens, parity with the stylesheet both ways`);
+console.log(`  ${all.light.size} tokens per mode  ·  ${inCss.size} colour tokens in the stylesheet, ${Object.keys(COLOUR_OMITTED).length} declared omitted from the export`);
 console.log(`  ${Object.keys(SCALE_OMITTED).length} custom properties declared inexpressible: ${Object.keys(SCALE_OMITTED).join(', ')}`);
 console.log(`  resolver: 1 set, 1 modifier, ${MODES.length} contexts`);
 console.log(`\n  ${pass + fails.length} assertions`);

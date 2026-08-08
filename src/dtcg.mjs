@@ -361,6 +361,20 @@ export const SCALE_OMITTED = {
   measure: 'unit `ch`; DTCG dimension allows only px and rem',
 };
 
+/* The twelve loader steps are an ORDERING over the brand family, not new colour: every
+ * value --loader-N names already ships as --brand-N under its own name. Exporting twelve
+ * aliases would put duplicate swatches in every Figma file, Swift enum and Kotlin data
+ * class — a designer would see the same violet twice under two names with no way to tell
+ * which to use. Same principle as SCALE_OMITTED and the same shape: declared here so the
+ * omission is discoverable from the generated artefact's root $extensions, not only from
+ * this comment. */
+export const COLOUR_OMITTED = Object.fromEntries(
+  Array.from({ length: 12 }, (_, i) => [
+    `loader-${i + 1}`,
+    'an ordering over --brand-N, not a new colour; the value already ships under its own name',
+  ]),
+);
+
 /** Split on a separator that is at parenthesis depth zero. */
 function splitTop(str, sep) {
   const out = [];
@@ -515,6 +529,10 @@ const SCALE_ROLES = {
     + 'starts reading as "loading"',
   '--dur-2': 'something small that moves — a popover, a tooltip',
   '--dur-3': 'something that travels a distance — a drawer, a dialog',
+  '--dur-tick': 'the loader clock: one visible step, and the only duration every loader '
+    + 'in the system shares',
+  '--dur-cycle': 'one full loader cycle — twelve ticks. What a spinner, bar or dot trio '
+    + 'repeats on',
   '--ease-out': 'anything entering. Fast then settling reads as arriving',
   '--ease-in-out': 'anything moving between two places it already occupied',
   '--ease-spring': 'anything the user directly caused, where a little overshoot reads as '
@@ -650,6 +668,20 @@ function scaleTokens(css) {
       $extensions: ext({ cssVar: `--dur-${i}`, css: raw }),
     };
   }
+  /* --dur-tick and --dur-cycle are named, not numbered, so the loop above never reached
+   * them — that gap is the whole reason this block exists. --dur-cycle is written in
+   * SECONDS in the stylesheet (1.2s), not ms like its siblings, so the unit is read off
+   * the value rather than assumed. */
+  for (const name of ['tick', 'cycle']) {
+    const raw = get(`dur-${name}`);
+    const m = /^([\d.]+)(ms|s)$/.exec(raw);
+    if (!m) throw new Error(`nilam/dtcg: cannot read "${raw}" as a DTCG duration`);
+    duration[name] = {
+      $value: { value: Number(m[1]), unit: m[2] },
+      $description: `${SCALE_ROLES[`--dur-${name}`]}. ${raw}`,
+      $extensions: ext({ cssVar: `--dur-${name}`, css: raw }),
+    };
+  }
 
   const ease = { $type: 'cubicBezier', $description: SCALE_DESCRIPTIONS['motion.ease'] };
   for (const n of ['out', 'in-out', 'spring']) {
@@ -773,6 +805,7 @@ function provenance(palette, opts, mode) {
         + 'chroma, which is why APCA was drafted; every floor here inherits that flaw.',
     },
     omittedFromScaleCss: SCALE_OMITTED,
+    omittedFromColorExport: COLOUR_OMITTED,
   };
 }
 

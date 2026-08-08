@@ -24,7 +24,7 @@
  */
 
 import { fmt, fmtIn } from './colour.mjs';
-import { inkFor } from './solve.mjs';
+import { inkFor, solveLoaderRamp } from './solve.mjs';
 
 const FAMILIES = ['neutral', 'brand', 'danger', 'warn', 'ok', 'info'];
 
@@ -102,6 +102,26 @@ const family = (palette, name, gamut = 'srgb') => {
   return `    /* ${name} */\n${steps}\n${ink}${surface}`;
 };
 
+/* The loader ramp, emitted as a separate block because it is an ORDERING over the brand
+ * family rather than a family of its own. Twelve aliases, no new colours: --loader-N is
+ * whichever brand step has the Nth-highest contrast against the page.
+ *
+ * The order differs by mode and both are computed here, so `npx nilam 22` re-derives them
+ * along with everything else. Writing them by hand would leave two literals at hue 285
+ * while the palette moved — which is exactly why --ink-max and --void were moved out of
+ * nilam.scale.css and into this file. */
+const loaderRamp = (palette, gamut = 'srgb') => {
+  const lo = solveLoaderRamp(palette.light.brand, palette.light.neutral[1], gamut);
+  const dk = solveLoaderRamp(palette.dark.brand, palette.dark.neutral[1], gamut);
+
+  const rows = Array.from({ length: 12 }, (_, i) =>
+    pair(`loader-${i + 1}`, palette.light.brand[lo[i]], palette.dark.brand[dk[i]], gamut),
+  ).join('\n');
+
+  return `    /* loader ramp — brand steps ordered by measured contrast against the page,\n`
+    + `       strongest first. light: ${lo.join(' ')}  ·  dark: ${dk.join(' ')} */\n${rows}`;
+};
+
 export function toCss(palette, { selector = ':root', assertions = null, p3 = null } = {}) {
   const count = assertions == null ? '' : `${assertions} assertions hold over these exact\n * values; edit one by hand and none of them do.\n *`;
 
@@ -144,6 +164,8 @@ ${LAYERS}
     color-scheme: light dark;
 
 ${FAMILIES.map((f) => family(palette, f)).join('\n\n')}
+
+${loaderRamp(palette)}
   }
 
   /* Forcing a mode is one declaration, not a second copy of the palette. These work

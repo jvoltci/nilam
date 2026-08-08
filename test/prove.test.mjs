@@ -333,6 +333,25 @@ if (existsSync(join(root, 'nilam.css'))) {
   check(layerDecls === 1, `the bundle declares the layer order ${layerDecls} times, expected exactly 1`);
 }
 
+/* The tokens must reach the FILE, not just the solver. achroma shipped a whole layer
+ * that existed in the repo and not in the package; every colour assertion was green. */
+{
+  const tokensCss = readFileSync(join(root, 'nilam.tokens.css'), 'utf8');
+  for (let n = 1; n <= 12; n++) {
+    check(
+      new RegExp(`--loader-${n}:\\s*light-dark\\(`).test(tokensCss),
+      `--loader-${n} is missing from nilam.tokens.css, or is not emitted with light-dark()`,
+    );
+  }
+  check(
+    !/--loader-13:/.test(tokensCss),
+    'a --loader-13 was emitted; the ramp is twelve steps because the scale is',
+  );
+
+  const bundle = readFileSync(join(root, 'nilam.css'), 'utf8');
+  check(/--loader-1:/.test(bundle), '--loader-1 is in nilam.tokens.css but not in the nilam.css bundle');
+}
+
 /* Every status variant in the component layer must actually paint a glyph, because
  * assertion 3 promises the channel exists and only this checks that it does. */
 const components = readFileSync(join(root, 'nilam.components.css'), 'utf8');

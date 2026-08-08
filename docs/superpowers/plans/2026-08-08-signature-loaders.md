@@ -799,6 +799,75 @@ git commit -m "feat(loaders): quiet under 1.2s, present after, still-working at 
 
 ---
 
+### Task 8c: The exports (added mid-execution — this plan missed it)
+
+**Files:**
+- Modify: `src/dtcg.mjs`
+- Test: `test/dtcg.test.mjs` (already fails; do not weaken it)
+
+`test/dtcg.test.mjs` began failing after Task 8 with six failures. It was right and this
+plan was wrong: nothing here accounted for the DTCG / Figma / Swift / Kotlin exports.
+
+```
+--dur-tick is in nilam.scale.css but neither exported as a token nor declared in SCALE_OMITTED
+--dur-cycle is in nilam.scale.css but neither exported as a token nor declared in SCALE_OMITTED
+dark: the stylesheet has 93 colour tokens and the DTCG export has 81
+Figma gets 81 colour variables against the stylesheet's 93
+the Swift export declares 81 colours against the stylesheet's 93
+the Kotlin data class has 81 fields against the stylesheet's 93 colours
+```
+
+The two decisions are already made. Implement them; do not re-litigate.
+
+**1. The durations get exported.** `--dur-tick` and `--dur-cycle` are ordinary duration
+tokens and DTCG has a `duration` type. They were missed only because the emitter at
+`src/dtcg.mjs:646` loops over a numeric pattern (`dur-0` … `dur-3`) and these are named.
+Add them to `motion.duration` as `tick` and `cycle`, with entries in `SCALE_ROLES`
+following the register of the existing four.
+
+**2. The twelve loader colours are NOT exported — they are declared omitted.** The ramp is
+an *ordering* over the brand family, not new colour: every value it names already ships as
+`--brand-N`. Emitting twelve aliases would put duplicate swatches in every Figma file,
+Swift enum and Kotlin data class, where a designer would see the same violet twice under
+two names and have no way to tell which to use.
+
+Follow the `SCALE_OMITTED` pattern already in the file: the omission must be **discoverable
+from the generated artefact**, in the document's root `$extensions`, not only from a source
+comment. That is this file's stated principle — "a property cannot go missing silently" —
+and an omission that is only in a comment is exactly the silent kind.
+
+- [ ] **Step 1: Read the mechanism before changing it**
+
+Read `src/dtcg.mjs` around `SCALE_OMITTED` (line ~356), the colour-count assertions in
+`test/dtcg.test.mjs`, and the `motion.duration` emitter (line ~644). The colour parity
+check may need a declaration mechanism that does not exist yet; model it on `SCALE_OMITTED`
+rather than inventing a different shape.
+
+- [ ] **Step 2: Confirm the failures before you touch anything**
+
+Run: `node test/dtcg.test.mjs`
+Expected: the six failures above.
+
+- [ ] **Step 3: Implement both decisions**
+
+- [ ] **Step 4: Verify**
+
+Run: `node build.mjs && node test/dtcg.test.mjs`
+Expected: build `all passed`, dtcg test passes.
+
+**Do not make the test pass by loosening its counts.** If the assertion is that the
+stylesheet and the export describe the same system, weakening it to accept a mismatch
+deletes the only thing it checks.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/dtcg.mjs
+git commit -m "fix(dtcg): export the loader clock, declare the loader ramp omitted"
+```
+
+---
+
 ### Task 9: Reduced motion
 
 **Files:**
